@@ -19,6 +19,7 @@
     let lineHeight = $state(1.8);
 
     let paginatedContent = $state([]);
+    let handleResizeFn;
 
     function loadScript(src) {
         return new Promise((resolve, reject) => {
@@ -87,7 +88,10 @@
 
         for (const chapter of chapters) {
             const tempDiv = document.createElement("div");
-            tempDiv.innerHTML = chapter.content;
+            const hasHtml = /<[a-z][\s\S]*>/i.test(chapter.content);
+            tempDiv.innerHTML = hasHtml 
+                ? chapter.content 
+                : chapter.content.split(/\n+/).map(p => `<p>${p.trim()}</p>`).join("");
             const nodes = Array.from(tempDiv.childNodes);
 
             let currentPageHTML = "";
@@ -157,14 +161,35 @@
                     window.$(flipbookElement).turn("destroy");
                 }
 
+                const w = window.innerWidth;
+                const h = window.innerHeight;
+                let bookWidth = 1200;
+                let bookHeight = 800;
+                let displayMode = "double";
+
+                if (w < 768) {
+                    displayMode = "single";
+                    bookWidth = Math.min(w - 20, 480);
+                    bookHeight = bookWidth * 1.4;
+                } else {
+                    displayMode = "double";
+                    bookWidth = Math.min(w - 80, 1100);
+                    bookHeight = bookWidth * 0.66;
+                    if (bookHeight > h - 140) {
+                        bookHeight = h - 140;
+                        bookWidth = bookHeight * 1.5;
+                    }
+                }
+
                 window.$(flipbookElement).turn({
-                    width: 1200,
-                    height: 800,
+                    width: bookWidth,
+                    height: bookHeight,
                     elevation: 50,
                     gradients: true,
                     autoCenter: true,
                     duration: 1000,
                     page: 1,
+                    display: displayMode,
                     when: {
                         turning: function (event, page, view) {
                             const audio = new Audio("/page-flip.mp3");
@@ -173,6 +198,34 @@
                         },
                     },
                 });
+
+                handleResizeFn = () => {
+                    if (!window.$ || !flipbookElement || !window.$(flipbookElement).turn("is")) return;
+                    const curW = window.innerWidth;
+                    const curH = window.innerHeight;
+                    let targetW = 1200;
+                    let targetH = 800;
+                    let targetDisplay = "double";
+
+                    if (curW < 768) {
+                        targetDisplay = "single";
+                        targetW = Math.min(curW - 20, 480);
+                        targetH = targetW * 1.4;
+                    } else {
+                        targetDisplay = "double";
+                        targetW = Math.min(curW - 80, 1100);
+                        targetH = targetW * 0.66;
+                        if (targetH > curH - 140) {
+                            targetH = curH - 140;
+                            targetW = targetH * 1.5;
+                        }
+                    }
+
+                    window.$(flipbookElement).turn("display", targetDisplay);
+                    window.$(flipbookElement).turn("size", targetW, targetH);
+                };
+
+                window.addEventListener("resize", handleResizeFn);
 
                 window.addEventListener("keydown", (e) => {
                     if (e.keyCode === 37)
@@ -210,6 +263,7 @@
 
     onMount(async () => {
         if (browser) {
+            await ensureJQueryAndTurn();
             document.body.classList.add("paper-theme");
             const bookId = page.params.id;
             try {
@@ -229,6 +283,9 @@
 
             return () => {
                 document.body.classList.remove("paper-theme");
+                if (handleResizeFn) {
+                    window.removeEventListener("resize", handleResizeFn);
+                }
                 if (
                     window.$ &&
                     flipbookElement &&
@@ -242,8 +299,6 @@
 </script>
 
 <svelte:head>
-    <script src="/jquery.js"></script>
-    <script src="/turn.js"></script>
     <title>{book ? book.title : "Đang tải"} - Đọc truyện</title>
 </svelte:head>
 
@@ -369,29 +424,55 @@
         transition: all 0.25s cubic-bezier(0.22, 1, 0.36, 1);
     }
 
-    .floating-btn:hover {
-        background: var(--coral, #ed6f5c);
-        border-color: var(--coral, #ed6f5c);
-        color: white;
-        transform: scale(1.05);
-    }
-
     .floating-btn.back {
         top: 24px;
         left: 40px;
+        background: rgba(255, 255, 255, 0.85);
+        backdrop-filter: blur(8px);
+        border: 1px solid rgba(0, 0, 0, 0.08);
+        color: #475569;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        transition: all 0.3s cubic-bezier(0.19, 1, 0.22, 1);
+    }
+    
+    .floating-btn.back:hover {
+        background: #f1f5f9;
+        border-color: #cbd5e1;
+        color: #1e293b;
+        transform: translateY(-2px) scale(1.05);
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
     }
 
-    .floating-form {
-        position: fixed;
+    .floating-btn.bookmark {
         top: 24px;
         right: 40px;
-        z-index: 1000;
+        background: rgba(255, 255, 255, 0.85);
+        backdrop-filter: blur(8px);
+        border: 1px solid rgba(0, 0, 0, 0.08);
+        color: #ef4444;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        transition: all 0.3s cubic-bezier(0.19, 1, 0.22, 1);
+    }
+    
+    .floating-btn.bookmark:hover {
+        background: #fef2f2;
+        border-color: #fca5a5;
+        color: #ef4444;
+        transform: translateY(-2px) scale(1.05);
+        box-shadow: 0 6px 16px rgba(239, 68, 68, 0.15);
     }
 
     .floating-btn.bookmark.active {
-        background: var(--coral, #ed6f5c);
-        border-color: var(--coral, #ed6f5c);
-        color: white;
+        background: #ef4444;
+        border-color: #ef4444;
+        color: #ffffff;
+        box-shadow: 0 6px 16px rgba(239, 68, 68, 0.3);
+    }
+    
+    .floating-btn.bookmark.active:hover {
+        background: #dc2626;
+        border-color: #dc2626;
+        color: #ffffff;
     }
 
     .workspace {
@@ -404,8 +485,11 @@
     }
 
     .flipbook-viewport {
-        width: 1200px;
-        height: 800px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: auto;
+        height: auto;
         opacity: 0;
         transition: opacity 0.6s ease;
     }

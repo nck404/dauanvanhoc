@@ -113,6 +113,9 @@
                         <a href="/video" class="nav-item {page.url.pathname.startsWith('/video') ? 'active' : ''}">
                             <i class="bx bxs-movie-play"></i>
                         </a>
+                        <a href="/map" class="nav-item {page.url.pathname.startsWith('/map') ? 'active' : ''}">
+                            <i class="bx bxs-map-alt"></i>
+                        </a>
                         {#if user?.role === 'admin'}
                             <a href="/admin" class="nav-item {page.url.pathname.startsWith('/admin') ? 'active' : ''}">
                                 <i class="bx bxs-dashboard"></i>
@@ -225,7 +228,7 @@
         color: white;
         border-radius: 40px;
         height: 48px;
-        min-width: 320px;
+        min-width: 360px;
         display: flex;
         align-items: center;
         justify-content: center;

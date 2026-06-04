@@ -24,6 +24,17 @@
         }
     }
 
+    function getTypeLabel(type) {
+        switch (type) {
+            case "text": return "Truyện chữ";
+            case "manga": return "Truyện tranh";
+            case "video": return "Video";
+            case "audio": return "Audio";
+            case "vn": return "Visual Novel";
+            default: return type || "Chưa phân loại";
+        }
+    }
+
     async function loadBooks() {
         try {
             const res = await apiFetch("/api/books?limit=100");
@@ -50,7 +61,7 @@
             if (res.ok) {
                 await loadBooks();
             } else {
-                errorMsg = "Không thể xóa cuốn sách này";
+                errorMsg = "Không thể xóa tác phẩm này";
             }
         } catch (e) {
             errorMsg = "Lỗi kết nối";
@@ -62,9 +73,9 @@
 
 <div class="admin-container">
     <div class="header">
-        <h1>Quản lý kho sách</h1>
-        <a href="/admin/add-book" class="comic-btn comic-btn--red comic-btn--md add-btn">
-            <i class="bx bx-plus"></i> Thêm sách mới
+        <h1>Quản lý tác phẩm <span class="title-count">{books.length}</span></h1>
+        <a href="/admin/add-book" class="modern-add-btn">
+            <i class="bx bx-plus"></i> Thêm tác phẩm mới
         </a>
     </div>
 
@@ -79,6 +90,7 @@
                     <th>Bìa</th>
                     <th>Tiêu đề</th>
                     <th>Tác giả</th>
+                    <th>Thể loại</th>
                     <th>Loại</th>
                     <th>Ngày tạo</th>
                     <th class="actions">Thao tác</th>
@@ -97,11 +109,12 @@
                         </td>
                         <td class="book-title">{book.title}</td>
                         <td>{book.author}</td>
-                        <td
-                            ><span class="type-badge {book.type}"
-                                >{book.type}</span
-                            ></td
-                        >
+                        <td>{book.category || "N/A"}</td>
+                        <td>
+                            <span class="type-badge {book.type}">
+                                {getTypeLabel(book.type)}
+                            </span>
+                        </td>
                         <td>{formatDate(book.created_at)}</td>
                         <td class="actions">
                             <div class="action-group">
@@ -129,9 +142,9 @@
                 {/each}
                 {#if books.length === 0}
                     <tr>
-                        <td colspan="6" class="empty"
-                            >Chưa có sách nào trong kho</td
-                        >
+                        <td colspan="7" class="empty">
+                            Chưa có tác phẩm nào trong kho
+                        </td>
                     </tr>
                 {/if}
             </tbody>
@@ -154,6 +167,9 @@
     }
 
     .header h1 {
+        display: flex;
+        align-items: center;
+        gap: 12px;
         font-size: 28px;
         font-weight: 800;
         background: var(--primary-gradient);
@@ -161,50 +177,46 @@
         -webkit-text-fill-color: transparent;
     }
 
-    .add-btn {
-        text-decoration: none;
-        padding: 10px 20px;
-        gap: 8px;
-        font-size: 13px;
-    }
-
-    .icon-btn {
-        width: 36px;
-        height: 36px;
-        border-radius: 4px;
-        display: flex;
+    .title-count {
+        display: inline-flex;
         align-items: center;
         justify-content: center;
-        border: 3px solid #1a1515;
-        cursor: pointer;
-        transition: all 0.15s ease;
-        font-size: 18px;
-        background: #fff;
-        color: #1a1515;
+        background: #f1f5f9;
+        color: #64748b;
+        font-size: 14px;
+        font-weight: 700;
+        padding: 4px 10px;
+        border-radius: 20px;
+        -webkit-text-fill-color: #64748b;
+        border: 1px solid #e2e8f0;
+    }
+
+    .modern-add-btn {
         text-decoration: none;
-        box-shadow: 3px 3px 0px #1a1515;
+        padding: 10px 20px;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        border-radius: 8px;
+        background: linear-gradient(135deg, #ef4444, #dc2626);
+        color: #ffffff;
+        box-shadow: 0 4px 6px -1px rgba(220, 38, 38, 0.2), 0 2px 4px -1px rgba(220, 38, 38, 0.1);
+        transition: all 0.2s ease;
     }
 
-    .icon-btn:hover {
-        box-shadow: 2px 2px 0px #1a1515;
-        transform: translate(1px, 1px);
-    }
-
-    .icon-btn.edit:hover {
-        color: #2563eb;
-        box-shadow: 2px 2px 0px #2563eb;
-        background: #eff6ff;
-    }
-
-    .icon-btn.delete:hover {
-        box-shadow: 2px 2px 0px #1a1515;
-        color: #e44232;
-        background: #fff5f3;
+    .modern-add-btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 6px 12px -2px rgba(220, 38, 38, 0.3), 0 3px 6px -2px rgba(220, 38, 38, 0.2);
     }
 
     .table-container {
         background: white;
         overflow: hidden;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.025);
+        border: 1px solid #f1f5f9;
     }
 
     table {
@@ -214,8 +226,8 @@
     }
 
     thead {
-        background: #fdfdfd;
-        border-bottom: 2px solid #f0f0f0;
+        background: #f8fafc;
+        border-bottom: 1px solid #e2e8f0;
     }
 
     th {
@@ -223,16 +235,16 @@
         font-size: 13px;
         text-transform: uppercase;
         letter-spacing: 0.5px;
-        color: var(--text-muted);
+        color: #64748b;
         font-weight: 700;
     }
 
     td {
         padding: 16px 24px;
         vertical-align: middle;
-        border-bottom: 1px solid #f5f5f5;
+        border-bottom: 1px solid #f1f5f9;
         font-size: 14px;
-        color: var(--text-main);
+        color: #334155;
     }
 
     .mini-cover {
@@ -245,7 +257,7 @@
 
     .book-title {
         font-weight: 600;
-        color: var(--text-main);
+        color: #1e293b;
     }
 
     .type-badge {
@@ -253,20 +265,29 @@
         border-radius: 6px;
         font-size: 11px;
         font-weight: 700;
-        text-transform: uppercase;
+        display: inline-block;
+        text-align: center;
     }
 
-    .type-badge.visual-novel {
-        background: rgba(225, 91, 91, 0.1);
-        color: var(--accent-dark);
+    .type-badge.text {
+        background: rgba(16, 185, 129, 0.1);
+        color: #10b981;
     }
     .type-badge.manga {
         background: rgba(59, 130, 246, 0.1);
         color: #3b82f6;
     }
-    .type-badge.novel {
-        background: rgba(16, 185, 129, 0.1);
-        color: #10b981;
+    .type-badge.video {
+        background: rgba(245, 158, 11, 0.1);
+        color: #f59e0b;
+    }
+    .type-badge.audio {
+        background: rgba(139, 92, 246, 0.1);
+        color: #8b5cf6;
+    }
+    .type-badge.vn {
+        background: rgba(236, 72, 153, 0.1);
+        color: #ec4899;
     }
 
     .actions {
@@ -282,41 +303,41 @@
     .icon-btn {
         width: 36px;
         height: 36px;
-        border-radius: 4px;
+        border-radius: 8px;
         display: flex;
         align-items: center;
         justify-content: center;
-        border: 3px solid #1a1515;
+        border: 1px solid #e2e8f0;
         cursor: pointer;
-        transition: all 0.15s ease;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         font-size: 18px;
-        background: #fff;
-        color: #1a1515;
+        background: #ffffff;
+        color: #64748b;
         text-decoration: none;
-        box-shadow: 3px 3px 0px #1a1515;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
     }
 
     .icon-btn:hover {
-        box-shadow: 2px 2px 0px #1a1515;
-        transform: translate(1px, 1px);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.08);
     }
 
     .icon-btn.edit:hover {
-        color: #2563eb;
-        box-shadow: 2px 2px 0px #2563eb;
-        background: #eff6ff;
+        color: #3b82f6;
+        border-color: #bfdbfe;
+        background: #f0f9ff;
     }
 
     .icon-btn.delete:hover {
-        box-shadow: 2px 2px 0px #1a1515;
-        color: #e44232;
-        background: #fff5f3;
+        color: #ef4444;
+        border-color: #fca5a5;
+        background: #fef2f2;
     }
 
     .empty {
         text-align: center;
         padding: 60px !important;
-        color: var(--text-muted);
+        color: #94a3b8;
         font-style: italic;
     }
 
@@ -329,4 +350,3 @@
         font-weight: 600;
     }
 </style>
-
