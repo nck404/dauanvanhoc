@@ -1,5 +1,7 @@
 <script>
     import { onMount } from "svelte";
+    import { apiFetch } from "$lib/api.js";
+    import { goto } from "$app/navigation";
 
     let { form } = $props();
 
@@ -92,7 +94,8 @@
 
         const xhr = new XMLHttpRequest();
         const videoFileName = `${Date.now()}-${videoFile.name.replace(/[^a-zA-Z0-9.-]/g, "_")}`;
-        xhr.open("POST", `/uploads/videos/${videoFileName}`, true);
+        const API_BASE = "https://vhdp-worker.frenda.workers.dev";
+        xhr.open("POST", `${API_BASE}/uploads/videos/${videoFileName}`, true);
         const token = localStorage.getItem("vhdp_token");
         if (token) {
             xhr.setRequestHeader("Authorization", `Bearer ${token}`);
