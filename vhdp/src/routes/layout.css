@@ -1,0 +1,217 @@
+@import url("https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Space+Grotesk:wght@300..800&display=swap");
+@import url("https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css");
+
+:root {
+    --bg-color: #f7f3ee;
+    --bg-wash: #f9f5f0;
+    --bg-wash-deep: #f2ede6;
+    --accent-light: #f5f1ec;
+    --accent-mid: #e6ded6;
+    --accent-dark: #e15b5b;
+    --text-main: #1a1515;
+    --text-muted: #665555;
+    --radius: 12px;
+    --shadow: 0 10px 32px rgba(0, 0, 0, 0.06);
+    --glass: rgba(255, 255, 255, 0.92);
+    --glass-border: rgba(0, 0, 0, 0.08);
+    --primary-gradient: linear-gradient(
+        135deg,
+        #f5f1ec 0%,
+        #e8e0d8 50%,
+        #e15b5b 100%
+    );
+    --grid-pattern:
+        linear-gradient(to right, rgba(26, 21, 21, 0.06) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(26, 21, 21, 0.06) 1px, transparent 1px);
+
+    --coral: #e15b5b;
+    --bone: #ffffff;
+    --line: rgba(26, 21, 21, 0.12);
+    --line-faint: rgba(26, 21, 21, 0.06);
+    --paper-warm: #f9f5f0;
+    --ink: #1a1515;
+    --ink-soft: #4a3e3e;
+    --ink-mute: #665555;
+    --ink-faint: #8a7373;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html, body, input, button, select, textarea {
+    font-family: "Space Grotesk", sans-serif;
+}
+
+body {
+    background-color: var(--bg-color);
+    color: var(--text-main);
+    line-height: 1.6;
+    min-height: 100vh;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+a {
+    text-decoration: none;
+    color: inherit;
+    transition: all 0.3s ease;
+}
+
+button {
+    cursor: pointer;
+    border: none;
+    background: none;
+    font-family: inherit;
+    transition: all 0.3s ease;
+}
+
+/* ── Comic Button Base ─────────────────────────────────────────── */
+.comic-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-family: "Space Grotesk", sans-serif;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    border: 3px solid #1a1515;
+    border-radius: 4px;
+    cursor: pointer;
+    user-select: none;
+    box-shadow: 4px 4px 0px #1a1515;
+    transition:
+        box-shadow 0.15s ease,
+        transform 0.15s ease;
+}
+
+.comic-btn:hover {
+    box-shadow: 2px 2px 0px #1a1515;
+    transform: translate(2px, 2px);
+}
+
+.comic-btn:active {
+    box-shadow: 0px 0px 0px #1a1515;
+    transform: translate(4px, 4px);
+}
+
+.comic-btn:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+/* Comic colour variants */
+.comic-btn--red {
+    background: #e44232;
+    color: #fff;
+}
+.comic-btn--blue {
+    background: #2563eb;
+    color: #fff;
+}
+.comic-btn--yellow {
+    background: #ffe066;
+    color: #1a1515;
+}
+.comic-btn--green {
+    background: #22c55e;
+    color: #fff;
+}
+.comic-btn--white {
+    background: #fff;
+    color: #1a1515;
+}
+.comic-btn--ghost {
+    background: transparent;
+    color: #1a1515;
+}
+
+.comic-btn--sm {
+    font-size: 11px;
+    padding: 6px 14px;
+}
+.comic-btn--md {
+    font-size: 13px;
+    padding: 10px 20px;
+}
+.comic-btn--lg {
+    font-size: 15px;
+    padding: 13px 26px;
+}
+
+/* ── Comic Card ─────────────────────────────────────────────── */
+.comic-card {
+    border: 3px solid #1a1515;
+    border-radius: 6px;
+    box-shadow: 5px 5px 0px #1a1515;
+    transition:
+        box-shadow 0.15s ease,
+        transform 0.15s ease;
+}
+
+.comic-card:hover {
+    box-shadow: 3px 3px 0px #1a1515;
+    transform: translate(2px, 2px);
+}
+
+ul {
+    list-style: none;
+}
+
+/* ── Scroll Reveal ─────────────────────────────────────────── */
+.reveal {
+    opacity: 0;
+    transform: translateY(28px);
+    transition:
+        opacity 0.55s ease,
+        transform 0.55s ease;
+}
+
+.reveal.visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.reveal-delay-1 {
+    transition-delay: 0.08s;
+}
+.reveal-delay-2 {
+    transition-delay: 0.16s;
+}
+.reveal-delay-3 {
+    transition-delay: 0.24s;
+}
+.reveal-delay-4 {
+    transition-delay: 0.32s;
+}
+.reveal-delay-5 {
+    transition-delay: 0.4s;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--bg-color);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--accent-mid);
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--accent-dark);
+}
+
+.gradient-text {
+    background: var(--primary-gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-weight: 800;
+}

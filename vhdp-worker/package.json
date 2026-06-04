@@ -1,0 +1,24 @@
+{
+  "name": "vhdp-worker",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "deploy": "wrangler deploy",
+    "dev": "wrangler dev",
+    "start": "wrangler dev"
+  },
+  "devDependencies": {
+    "kysely": "0.28.5",
+    "wrangler": "^4.97.0"
+  },
+  "dependencies": {
+    "@libsql/client": "^0.17.3",
+    "better-auth": "^1.6.14",
+    "drizzle-orm": "^0.45.2"
+  },
+  "pnpm": {
+    "overrides": {
+      "kysely": "0.28.5"
+    }
+  }
+}

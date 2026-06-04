@@ -1,0 +1,243 @@
+<script>
+    import { onMount } from "svelte";
+
+    let { form } = $props();
+
+    let quill;
+    let editorContainer;
+    let descriptionField = $state('');
+
+    onMount(async () => {
+        if (typeof window !== "undefined") {
+            const Quill = (await import("quill")).default;
+            await import("quill/dist/quill.snow.css");
+
+            quill = new Quill(editorContainer, {
+                theme: "snow",
+                placeholder: "Nhập mô tả, lời thoại nội dung video ở đây...",
+                modules: {
+                    toolbar: [
+                        [{ header: [1, 2, 3, false] }],
+                        ["bold", "italic", "underline", "strike"],
+                        [{ list: "ordered" }, { list: "bullet" }],
+                        ["image", "link"],
+                        ["clean"],
+                    ],
+                },
+            });
+
+            quill.on("text-change", () => {
+                descriptionField = quill.root.innerHTML;
+            });
+            
+            if (form?.description) {
+                quill.root.innerHTML = form.description;
+            }
+        }
+    });
+</script>
+
+<svelte:head>
+    <title>Thêm Video Mới - Admin</title>
+</svelte:head>
+
+<div class="admin-container">
+    <div class="content-wrapper">
+        <div class="header">
+            <a href="/admin" class="back-link"><i class="bx bx-arrow-back"></i> Quay lại Admin</a>
+            <h1><i class="bx bx-video"></i> Thêm Video / Sự Kiện Mới</h1>
+            <p>Upload File Video và viết bài giới thiệu</p>
+        </div>
+
+        {#if form?.error}
+            <div class="alert error">{form.error}</div>
+        {/if}
+
+        {#if form?.success}
+            <div class="alert success">{form.message}</div>
+        {/if}
+
+        <form method="POST" enctype="multipart/form-data" class="add-form">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="title">Tựa đề Video *</label>
+                    <input type="text" id="title" name="title" value={form?.title ?? ''} required placeholder="Ví dụ: Lão Hạc The Movie..." />
+                </div>
+
+                <div class="form-group">
+                    <label for="author">Tác giả / Nguồn *</label>
+                    <input type="text" id="author" name="author" value={form?.author ?? ''} required placeholder="Sản xuất bởi..." />
+                </div>
+
+                <div class="form-group">
+                    <label for="cover_url">Link Ảnh Bìa (Thumbnail) - Tùy chọn</label>
+                    <input type="url" id="cover_url" name="cover_url" value={form?.cover_url ?? ''} placeholder="https://..." />
+                </div>
+
+                <div class="form-group">
+                    <label for="video_file">Upload file MP4/WebM *</label>
+                    <input type="file" id="video_file" name="video_file" accept="video/*" required class="file-input" />
+                </div>
+            </div>
+
+            <div class="form-group full-width">
+                <label for="description">Mô Tả / Bài Viết *</label>
+                <!-- Hidden input for Quill content -->
+                <input type="hidden" name="description" bind:value={descriptionField} />
+                <div class="editor-wrapper">
+                    <div bind:this={editorContainer} class="quill-editor"></div>
+                </div>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="submit-btn"><i class="bx bx-upload"></i> Đăng Video</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+    .admin-container {
+        padding: 40px 20px;
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+
+    .content-wrapper {
+        background: #fff;
+        border-radius: 20px;
+        box-shadow: var(--shadow);
+        padding: 40px;
+    }
+
+    .header {
+        margin-bottom: 30px;
+        padding-bottom: 20px;
+        border-bottom: 1px solid rgba(0,0,0,0.05);
+    }
+
+    .header h1 {
+        font-size: 28px;
+        color: var(--accent-dark);
+        margin: 10px 0;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .header p {
+        color: var(--text-muted);
+    }
+
+    .back-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        color: var(--text-muted);
+        font-weight: 600;
+        margin-bottom: 15px;
+    }
+
+    .back-link:hover {
+        color: var(--accent-dark);
+    }
+
+    .alert {
+        padding: 15px 20px;
+        border-radius: 12px;
+        margin-bottom: 20px;
+        font-weight: 600;
+    }
+
+    .alert.error {
+        background: rgba(225, 91, 91, 0.1);
+        color: var(--accent-dark);
+        border: 1px solid rgba(225, 91, 91, 0.2);
+    }
+
+    .alert.success {
+        background: rgba(34, 197, 94, 0.1);
+        color: #16a34a;
+        border: 1px solid rgba(34, 197, 94, 0.2);
+    }
+
+    .form-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 25px;
+        margin-bottom: 25px;
+    }
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .form-group.full-width {
+        grid-column: 1 / -1;
+    }
+
+    label {
+        font-weight: 600;
+        font-size: 14px;
+        color: var(--text-main);
+    }
+
+    input[type="text"], input[type="url"], select {
+        padding: 12px 16px;
+        border: 2px solid rgba(0,0,0,0.1);
+        border-radius: 10px;
+        font-family: inherit;
+        font-size: 15px;
+        transition: all 0.3s;
+    }
+
+    input:focus, select:focus {
+        outline: none;
+        border-color: var(--accent-dark);
+        box-shadow: 0 0 0 4px rgba(225, 91, 91, 0.1);
+    }
+
+    .file-input {
+        padding: 10px;
+        border: 2px dashed rgba(0,0,0,0.2);
+        border-radius: 10px;
+        width: 100%;
+        cursor: pointer;
+    }
+
+    .editor-wrapper {
+        border-radius: 12px;
+        overflow: hidden;
+        border: 2px solid rgba(0,0,0,0.1);
+    }
+
+    .quill-editor {
+        min-height: 400px;
+        background: #fff;
+    }
+
+    .form-actions {
+        margin-top: 30px;
+        display: flex;
+        justify-content: flex-end;
+    }
+
+    .submit-btn {
+        background: var(--primary-gradient);
+        color: white;
+        padding: 14px 32px;
+        border-radius: 12px;
+        font-size: 16px;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .submit-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 20px rgba(225, 91, 91, 0.3);
+    }
+</style>
