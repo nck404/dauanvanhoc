@@ -2,6 +2,7 @@ import { DurableObject } from "cloudflare:workers";
 import { createClient } from "@libsql/client";
 import { drizzle } from "drizzle-orm/libsql";
 import { getAuth } from "./auth.js";
+import { put, get } from "@vercel/blob";
 
 const CHUNK_SIZE = 65536;
 
@@ -274,6 +275,22 @@ export default {
       const stub = env.MY_DURABLE_OBJECT.getByName("file-store");
 
       if (request.method === "GET") {
+        if (env.BLOB_READ_WRITE_TOKEN) {
+          try {
+            const blobResult = await get(path, {
+              access: "private",
+              token: env.BLOB_READ_WRITE_TOKEN
+            });
+            if (blobResult) {
+              const headers = new Headers(corsHeaders);
+              headers.set("Content-Type", blobResult.blob.contentType);
+              headers.set("X-Content-Type-Options", "nosniff");
+              return new Response(blobResult.stream, { headers });
+            }
+          } catch (e) {
+          }
+        }
+
         const file = await stub.getFile(path);
         if (!file) {
           return new Response("Not Found", { status: 404, headers: corsHeaders });
@@ -305,11 +322,24 @@ export default {
 
         const arrayBuffer = await fileData.arrayBuffer();
         const mimeType = fileData.type || "application/octet-stream";
-        const result = await stub.uploadFile(path, mimeType, arrayBuffer);
+
+        let uploadUrl = "";
+        if (env.BLOB_READ_WRITE_TOKEN) {
+          const blob = await put(path, arrayBuffer, {
+            access: "private",
+            contentType: mimeType,
+            token: env.BLOB_READ_WRITE_TOKEN,
+            addRandomSuffix: false
+          });
+          uploadUrl = `/uploads/${path}`;
+        } else {
+          await stub.uploadFile(path, mimeType, arrayBuffer);
+          uploadUrl = `/uploads/${path}`;
+        }
 
         const headers = new Headers(corsHeaders);
         headers.set("Content-Type", "application/json");
-        return new Response(JSON.stringify({ success: true, url: `/uploads/${path}` }), { headers });
+        return new Response(JSON.stringify({ success: true, url: uploadUrl }), { headers });
       }
     }
 

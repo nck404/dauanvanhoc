@@ -232,13 +232,13 @@
 
 <style>
     .auth-page {
-        min-height: calc(100vh - 100px);
+        min-height: 100vh;
         display: flex;
         align-items: center;
         justify-content: center;
-        padding: 20px;
+        padding: 80px 20px 20px 20px;
         position: relative;
-        background: linear-gradient(135deg, rgba(225, 91, 91, 0.05) 0%, rgba(255, 255, 255, 0) 100%);
+        background: linear-gradient(135deg, rgba(225, 91, 91, 0.08) 0%, rgba(225, 91, 91, 0.02) 100%);
     }
 
     .auth-card {

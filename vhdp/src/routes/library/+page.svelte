@@ -124,6 +124,13 @@
         margin-bottom: 8px;
     }
 
+    .title-section :global(.gradient-text) {
+        background: linear-gradient(135deg, #e15b5b 0%, #1a1515 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
     .subtitle {
         color: var(--text-muted);
         font-size: 16px;

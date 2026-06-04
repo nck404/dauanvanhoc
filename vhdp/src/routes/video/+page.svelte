@@ -1,4 +1,5 @@
 <script>
+    import { onMount } from "svelte";
     import { apiFetch } from "$lib/api.js";
     import SkeletonCard from "$lib/components/SkeletonCard.svelte";
 

@@ -43,15 +43,17 @@
         };
     });
 
+    let isAuthPage = $derived(page.url.pathname === "/login" || page.url.pathname === "/register");
+
     $effect(() => {
         if (!initialized) return;
         const pathname = page.url.pathname;
-        const isAuthPage = pathname === "/login" || pathname === "/register";
+        const isAuth = pathname === "/login" || pathname === "/register";
         const isAdminPath = pathname.startsWith("/admin");
 
-        if (!currentUser && !isAuthPage) {
+        if (!currentUser && !isAuth) {
             goto(`/login?callback=${encodeURIComponent(pathname + page.url.search)}`);
-        } else if (currentUser && isAuthPage) {
+        } else if (currentUser && isAuth) {
             goto("/");
         } else if (isAdminPath && currentUser?.role !== "admin") {
             goto("/");
@@ -73,7 +75,7 @@
 {#if initialized}
     <Navbar user={currentUser} />
 
-    <main class="main-content">
+    <main class="main-content" class:auth-layout={isAuthPage}>
         <ScrollReveal>
             {@render children()}
         </ScrollReveal>
@@ -86,6 +88,9 @@
         z-index: 1;
         padding-top: 100px;
         min-height: 100vh;
+    }
+    .main-content.auth-layout {
+        padding-top: 0;
     }
 </style>
 

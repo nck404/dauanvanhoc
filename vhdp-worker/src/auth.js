@@ -11,6 +11,7 @@ export function getAuth(db, env, request) {
 
   const trustedOrigins = [
     "https://dauanvanhoc.site",
+    "https://www.dauanvanhoc.site",
     "http://localhost:5173",
     "http://localhost:4173"
   ];
