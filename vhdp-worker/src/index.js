@@ -367,10 +367,32 @@ export default {
       console.error("Auth check error:", e);
     }
 
+    function makeUrlsAbsolute(obj, origin) {
+      if (obj === null || obj === undefined) return obj;
+      if (typeof obj === "string") {
+        if (obj.startsWith("/uploads/")) {
+          return `${origin}${obj}`;
+        }
+        return obj;
+      }
+      if (Array.isArray(obj)) {
+        return obj.map(item => makeUrlsAbsolute(item, origin));
+      }
+      if (typeof obj === "object") {
+        const newObj = {};
+        for (const key in obj) {
+          newObj[key] = makeUrlsAbsolute(obj[key], origin);
+        }
+        return newObj;
+      }
+      return obj;
+    }
+
     const respondJson = (data, status = 200) => {
       const headers = new Headers(corsHeaders);
       headers.set("Content-Type", "application/json");
-      return new Response(JSON.stringify(data), { status, headers });
+      const processedData = makeUrlsAbsolute(data, url.origin);
+      return new Response(JSON.stringify(processedData), { status, headers });
     };
 
     if (url.pathname === "/api/books" && request.method === "GET") {

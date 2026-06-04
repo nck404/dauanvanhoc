@@ -2,11 +2,39 @@
     import { onMount } from "svelte";
     import { page } from "$app/state";
     import { apiFetch } from "$lib/api.js";
+    import Plyr from "plyr";
+    import "plyr/dist/plyr.css";
 
     let video = $state(null);
     let isBookmarked = $state(false);
     let recommended = $state([]);
     let loading = $state(true);
+
+    function usePlyr(node) {
+        const player = new Plyr(node, {
+            controls: [
+                'play-large',
+                'play',
+                'progress',
+                'current-time',
+                'duration',
+                'mute',
+                'volume',
+                'settings',
+                'pip',
+                'airplay',
+                'fullscreen'
+            ],
+            settings: ['speed'],
+            speed: { selected: 1, options: [0.5, 0.75, 1, 1.25, 1.5, 2] }
+        });
+
+        return {
+            destroy() {
+                player.destroy();
+            }
+        };
+    }
 
     let videoElement;
     let isPlaying = $state(false);
@@ -17,6 +45,7 @@
     let playbackRate = $state(1);
     let isFullscreen = $state(false);
     let progress = $derived(duration > 0 ? (currentTime / duration) * 100 : 0);
+    let isWaiting = $state(false);
 
     let isLiked = $state(false);
     let likesOffset = $state(0);
@@ -265,131 +294,15 @@
                 <div class="player-section comic-card">
                     <div class="video-wrapper">
                         <video
-                            bind:this={videoElement}
+                            use:usePlyr
                             src={video.video_url}
                             poster={video.cover_url}
                             class="main-video"
                             playsinline
-                            ontimeupdate={() => (currentTime = videoElement.currentTime)}
-                            onloadedmetadata={() => (duration = videoElement.duration)}
-                            onplay={() => (isPlaying = true)}
-                            onpause={() => (isPlaying = false)}
-                            onended={() => (isPlaying = false)}
-                            onclick={togglePlay}
                         >
                             <track kind="captions" />
                             Trình duyệt của bạn không hỗ trợ xem video.
                         </video>
-
-                        {#if showOverlayType}
-                            <div class="action-overlay-animation">
-                                {#if showOverlayType === "play"}
-                                    <div class="overlay-icon-box">
-                                        <i class="bx bx-play"></i>
-                                    </div>
-                                {:else}
-                                    <div class="overlay-icon-box">
-                                        <i class="bx bx-pause"></i>
-                                    </div>
-                                {/if}
-                            </div>
-                        {/if}
-                    </div>
-
-                    <div class="player-toolbar">
-                        <div class="seek-row" role="presentation" onclick={seek}>
-                            <div class="seek-track">
-                                <div class="seek-fill" style:width="{progress}%"></div>
-                                <span class="seek-thumb" style:left="{progress}%"></span>
-                            </div>
-                        </div>
-
-                        <div class="control-row">
-                            <div class="control-group left">
-                                <button
-                                    type="button"
-                                    class="control-btn"
-                                    onclick={() => skip(-10)}
-                                    title="Lùi 10 giây"
-                                >
-                                    <i class="bx bx-rewind"></i>
-                                </button>
-                                <button
-                                    type="button"
-                                    class="control-btn play-btn"
-                                    onclick={togglePlay}
-                                    title={isPlaying ? "Tạm dừng" : "Phát video"}
-                                >
-                                    <i class="bx {isPlaying ? 'bx-pause' : 'bx-play'}"></i>
-                                </button>
-                                <button
-                                    type="button"
-                                    class="control-btn"
-                                    onclick={() => skip(10)}
-                                    title="Tua tới 10 giây"
-                                >
-                                    <i class="bx bx-fast-forward"></i>
-                                </button>
-                            </div>
-
-                            <div class="control-group center">
-                                <span class="time-code">{formatTime(currentTime)}</span>
-                                <span class="time-sep">/</span>
-                                <span class="time-code">{formatTime(duration)}</span>
-                            </div>
-
-                            <div class="control-group right">
-                                <button
-                                    type="button"
-                                    class="control-btn"
-                                    onclick={toggleMute}
-                                    title={isMuted ? "Bật tiếng" : "Tắt tiếng"}
-                                >
-                                    <i
-                                        class="bx {isMuted || volume === 0
-                                            ? 'bx-volume-mute'
-                                            : volume < 0.5
-                                              ? 'bx-volume-low'
-                                              : 'bx-volume-full'}"
-                                    ></i>
-                                </button>
-
-                                <input
-                                    class="volume-slider"
-                                    type="range"
-                                    min="0"
-                                    max="1"
-                                    step="0.01"
-                                    value={volume}
-                                    oninput={updateVolume}
-                                    aria-label="Điều chỉnh âm lượng"
-                                />
-
-                                <button
-                                    type="button"
-                                    class="control-btn speed-btn"
-                                    onclick={changeSpeed}
-                                    title="Tốc độ phát"
-                                >
-                                    {playbackRate}x
-                                </button>
-
-                                <button
-                                    type="button"
-                                    class="control-btn"
-                                    onclick={toggleFullscreen}
-                                    title={isFullscreen
-                                        ? "Thoát toàn màn hình"
-                                        : "Toàn màn hình"}
-                                >
-                                    <i
-                                        class="bx {isFullscreen
-                                            ? 'bx-exit-fullscreen'
-                                            : 'bx-fullscreen'}"
-                                    ></i>
-                                </button>
-                            </div>
-                        </div>
                     </div>
                 </div>
 
@@ -1119,5 +1032,29 @@
         color: var(--coral);
         font-family: "Space Grotesk", sans-serif;
         font-weight: 700;
+    }
+
+    .buffering-spinner {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(0, 0, 0, 0.4);
+        pointer-events: none;
+        z-index: 10;
+    }
+
+    .buffering-spinner i {
+        font-size: 50px;
+        color: #ffffff;
+    }
+
+    :global(.plyr) {
+        --plyr-color-main: var(--accent-dark, #e15b5b);
+        border-radius: 12px;
+        overflow: hidden;
+        width: 100%;
+        height: 100%;
     }
 </style>
