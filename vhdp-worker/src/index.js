@@ -399,17 +399,41 @@ export default {
       const page = parseInt(url.searchParams.get("page") || "1");
       const limit = parseInt(url.searchParams.get("limit") || "12");
       const offset = (page - 1) * limit;
+      const type = url.searchParams.get("type");
 
-      const countRes = await client.execute("SELECT COUNT(*) as total FROM books");
-      const total = countRes.rows[0].total || 0;
+      let total = 0;
+      let booksRows = [];
 
-      const booksRes = await client.execute({
-        sql: "SELECT * FROM books ORDER BY created_at DESC LIMIT ? OFFSET ?",
-        args: [limit, offset]
-      });
+      if (type) {
+        const isTruyenChu = type === "truyện chữ" || type === "text";
+        const countRes = await client.execute({
+          sql: isTruyenChu 
+            ? "SELECT COUNT(*) as total FROM books WHERE type IN ('truyện chữ', 'text') OR type IS NULL OR type = ''"
+            : "SELECT COUNT(*) as total FROM books WHERE type IN ('truyện tranh', 'comic')",
+          args: []
+        });
+        total = countRes.rows[0].total || 0;
+
+        const booksRes = await client.execute({
+          sql: isTruyenChu
+            ? "SELECT * FROM books WHERE type IN ('truyện chữ', 'text') OR type IS NULL OR type = '' ORDER BY created_at DESC LIMIT ? OFFSET ?"
+            : "SELECT * FROM books WHERE type IN ('truyện tranh', 'comic') ORDER BY created_at DESC LIMIT ? OFFSET ?",
+          args: [limit, offset]
+        });
+        booksRows = booksRes.rows;
+      } else {
+        const countRes = await client.execute("SELECT COUNT(*) as total FROM books");
+        total = countRes.rows[0].total || 0;
+
+        const booksRes = await client.execute({
+          sql: "SELECT * FROM books ORDER BY created_at DESC LIMIT ? OFFSET ?",
+          args: [limit, offset]
+        });
+        booksRows = booksRes.rows;
+      }
 
       return respondJson({
-        books: booksRes.rows,
+        books: booksRows,
         total,
         pages: Math.ceil(total / limit)
       });
@@ -614,11 +638,19 @@ export default {
     }
 
     if (url.pathname === "/api/homepage" && request.method === "GET") {
-      const booksRes = await client.execute("SELECT * FROM books ORDER BY created_at DESC LIMIT 8");
+      const truyenChuRes = await client.execute({
+        sql: "SELECT * FROM books WHERE type IN ('truyện chữ', 'text') OR type IS NULL OR type = '' ORDER BY created_at DESC LIMIT 8",
+        args: []
+      });
+      const truyenTranhRes = await client.execute({
+        sql: "SELECT * FROM books WHERE type IN ('truyện tranh', 'comic') ORDER BY created_at DESC LIMIT 8",
+        args: []
+      });
       const audiosRes = await client.execute("SELECT * FROM audios ORDER BY created_at DESC LIMIT 8");
       const videosRes = await client.execute("SELECT * FROM videos ORDER BY created_at DESC LIMIT 8");
       return respondJson({
-        books: booksRes.rows,
+        truyenChu: truyenChuRes.rows,
+        truyenTranh: truyenTranhRes.rows,
         audios: audiosRes.rows,
         videos: videosRes.rows
       });
@@ -704,6 +736,36 @@ export default {
           });
           return respondJson({ success: true, isBookmarked: true, message: "Đã thêm vào thư viện" });
         }
+      }
+
+      if (request.method === "PUT" || request.method === "PATCH") {
+        if (!sessionUser || sessionUser.role !== "admin") {
+          return respondJson({ error: "Admin access required" }, 403);
+        }
+        const data = await request.json();
+        await client.execute({
+          sql: "UPDATE audios SET title = ?, author = ?, cover_url = ?, audio_url = ?, lyrics = ? WHERE id = ?",
+          args: [
+            data.title,
+            data.author,
+            data.cover_url || "",
+            data.audio_url || "",
+            data.lyrics || "",
+            audioId
+          ]
+        });
+        return respondJson({ success: true });
+      }
+
+      if (request.method === "DELETE") {
+        if (!sessionUser || sessionUser.role !== "admin") {
+          return respondJson({ error: "Admin access required" }, 403);
+        }
+        await client.execute({
+          sql: "DELETE FROM audios WHERE id = ?",
+          args: [audioId]
+        });
+        return respondJson({ success: true });
       }
     }
 
@@ -793,6 +855,36 @@ export default {
           });
           return respondJson({ success: true, isBookmarked: true, message: "Đã thêm vào thư viện" });
         }
+      }
+
+      if (request.method === "PUT" || request.method === "PATCH") {
+        if (!sessionUser || sessionUser.role !== "admin") {
+          return respondJson({ error: "Admin access required" }, 403);
+        }
+        const data = await request.json();
+        await client.execute({
+          sql: "UPDATE videos SET title = ?, author = ?, cover_url = ?, video_url = ?, description = ? WHERE id = ?",
+          args: [
+            data.title,
+            data.author,
+            data.cover_url || "",
+            data.video_url || "",
+            data.description || "",
+            videoId
+          ]
+        });
+        return respondJson({ success: true });
+      }
+
+      if (request.method === "DELETE") {
+        if (!sessionUser || sessionUser.role !== "admin") {
+          return respondJson({ error: "Admin access required" }, 403);
+        }
+        await client.execute({
+          sql: "DELETE FROM videos WHERE id = ?",
+          args: [videoId]
+        });
+        return respondJson({ success: true });
       }
     }
 

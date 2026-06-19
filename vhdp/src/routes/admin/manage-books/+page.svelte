@@ -2,36 +2,44 @@
     import { onMount } from "svelte";
     import { apiFetch } from "$lib/api.js";
 
+    let activeTab = $state("books");
     let books = $state([]);
+    let audios = $state([]);
+    let videos = $state([]);
     let deletingId = $state(null);
     let errorMsg = $state("");
+
+    let selectedIds = $state([]);
 
     function formatDate(dateStr) {
         if (!dateStr) return "N/A";
         return new Date(dateStr).toLocaleDateString("vi-VN");
     }
 
-    function getCoverSrc(book) {
-        const src = (book?.cover_url || book?.cover || "").toString().trim();
-        return src || "/placeholder-book.jpg";
+    function getCoverSrc(item, type) {
+        const src = (item?.cover_url || item?.cover || "").toString().trim();
+        if (src) return src;
+        return "/default_cover.jpg";
     }
 
     function handleCoverError(e) {
         const img = e.currentTarget;
         if (img && img.src && !img.dataset.fallback) {
             img.dataset.fallback = "1";
-            img.src = "/placeholder-book.jpg";
+            img.src = "/default_cover.jpg";
         }
     }
 
     function getTypeLabel(type) {
         switch (type) {
-            case "text": return "Truyện chữ";
-            case "manga": return "Truyện tranh";
-            case "video": return "Video";
-            case "audio": return "Audio";
-            case "vn": return "Visual Novel";
-            default: return type || "Chưa phân loại";
+            case "text":
+            case "truyện chữ":
+                return "Truyện chữ";
+            case "manga":
+            case "truyện tranh":
+                return "Truyện tranh";
+            default:
+                return type || "Truyện chữ";
         }
     }
 
@@ -47,21 +55,61 @@
         }
     }
 
+    async function loadAudios() {
+        try {
+            const res = await apiFetch("/api/audios");
+            if (res.ok) {
+                const data = await res.json();
+                audios = data.audios || [];
+            }
+        } catch (e) {
+            console.error(e);
+        }
+    }
+
+    async function loadVideos() {
+        try {
+            const res = await apiFetch("/api/videos");
+            if (res.ok) {
+                const data = await res.json();
+                videos = data.videos || [];
+            }
+        } catch (e) {
+            console.error(e);
+        }
+    }
+
+    async function reloadAll() {
+        await Promise.all([loadBooks(), loadAudios(), loadVideos()]);
+    }
+
     onMount(() => {
-        loadBooks();
+        reloadAll();
     });
 
-    async function deleteBook(bookId, bookTitle) {
-        if (!confirm(`Bạn có chắc muốn xóa "${bookTitle}"?`)) return;
-        deletingId = bookId;
+    async function deleteItem(id, title, type) {
+        if (!confirm(`Bạn có chắc muốn xóa "${title}"?`)) return;
+        deletingId = id;
+        errorMsg = "";
+        
+        let url = "";
+        if (type === "books") {
+            url = `/api/books/${id}`;
+        } else if (type === "audios") {
+            url = `/api/audios/${id}`;
+        } else if (type === "videos") {
+            url = `/api/videos/${id}`;
+        }
+
         try {
-            const res = await apiFetch(`/api/books/${bookId}`, {
+            const res = await apiFetch(url, {
                 method: "DELETE"
             });
             if (res.ok) {
-                await loadBooks();
+                selectedIds = selectedIds.filter(x => x !== id);
+                await reloadAll();
             } else {
-                errorMsg = "Không thể xóa tác phẩm này";
+                errorMsg = "Không thể xóa nội dung này";
             }
         } catch (e) {
             errorMsg = "Lỗi kết nối";
@@ -69,86 +117,295 @@
             deletingId = null;
         }
     }
+
+    function toggleSelect(id) {
+        if (selectedIds.includes(id)) {
+            selectedIds = selectedIds.filter(x => x !== id);
+        } else {
+            selectedIds = [...selectedIds, id];
+        }
+    }
+
+    function toggleSelectAll(e) {
+        const checked = e.currentTarget.checked;
+        const currentItems = activeTab === "books" ? books : (activeTab === "audios" ? audios : videos);
+        if (checked) {
+            selectedIds = currentItems.map(item => item.id);
+        } else {
+            selectedIds = [];
+        }
+    }
+
+    async function deleteSelected() {
+        const count = selectedIds.length;
+        if (count === 0) return;
+        if (!confirm(`Bạn có chắc muốn xóa ${count} mục đã chọn?`)) return;
+
+        deletingId = "bulk";
+        errorMsg = "";
+
+        try {
+            await Promise.all(selectedIds.map(id => {
+                let url = "";
+                if (activeTab === "books") url = `/api/books/${id}`;
+                else if (activeTab === "audios") url = `/api/audios/${id}`;
+                else if (activeTab === "videos") url = `/api/videos/${id}`;
+                return apiFetch(url, { method: "DELETE" });
+            }));
+            selectedIds = [];
+            await reloadAll();
+        } catch (e) {
+            errorMsg = "Lỗi khi thực hiện xóa hàng loạt";
+        } finally {
+            deletingId = null;
+        }
+    }
+
+    function switchTab(tab) {
+        activeTab = tab;
+        selectedIds = [];
+    }
+
+    let isAllSelected = $derived.by(() => {
+        const currentItems = activeTab === "books" ? books : (activeTab === "audios" ? audios : videos);
+        if (currentItems.length === 0) return false;
+        return currentItems.every(item => selectedIds.includes(item.id));
+    });
 </script>
 
 <div class="admin-container">
     <div class="header">
-        <h1>Quản lý tác phẩm <span class="title-count">{books.length}</span></h1>
-        <a href="/admin/add-book" class="modern-add-btn">
-            <i class="bx bx-plus"></i> Thêm tác phẩm mới
-        </a>
+        <h1>Quản lý kho nội dung</h1>
+        <div class="header-actions">
+            {#if selectedIds.length > 0}
+                <button class="bulk-delete-btn" onclick={deleteSelected} disabled={deletingId !== null}>
+                    <i class="bx bx-trash"></i> Xóa đã chọn ({selectedIds.length})
+                </button>
+            {/if}
+
+            {#if activeTab === 'books'}
+                <a href="/admin/add-book" class="modern-add-btn">
+                    <i class="bx bx-plus"></i> Thêm sách / truyện
+                </a>
+            {:else if activeTab === 'audios'}
+                <a href="/admin/add-audio" class="modern-add-btn">
+                    <i class="bx bx-plus"></i> Thêm Audio mới
+                </a>
+            {:else}
+                <a href="/admin/add-video" class="modern-add-btn">
+                    <i class="bx bx-plus"></i> Thêm Video mới
+                </a>
+            {/if}
+        </div>
     </div>
 
     {#if errorMsg}
         <div class="error-banner">{errorMsg}</div>
     {/if}
 
+    <div class="tabs-container">
+        <button class:active={activeTab === 'books'} onclick={() => switchTab('books')}>
+            Sách & Truyện ({books.length})
+        </button>
+        <button class:active={activeTab === 'audios'} onclick={() => switchTab('audios')}>
+            Audio Sách ({audios.length})
+        </button>
+        <button class:active={activeTab === 'videos'} onclick={() => switchTab('videos')}>
+            Video Tư Liệu ({videos.length})
+        </button>
+    </div>
+
     <div class="table-container">
-        <table>
-            <thead>
-                <tr>
-                    <th>Bìa</th>
-                    <th>Tiêu đề</th>
-                    <th>Tác giả</th>
-                    <th>Thể loại</th>
-                    <th>Loại</th>
-                    <th>Ngày tạo</th>
-                    <th class="actions">Thao tác</th>
-                </tr>
-            </thead>
-            <tbody>
-                {#each books as book}
+        {#if activeTab === 'books'}
+            <table>
+                <thead>
                     <tr>
-                        <td>
-                            <img
-                                src={getCoverSrc(book)}
-                                alt={book.title}
-                                class="mini-cover"
-                                onerror={handleCoverError}
-                            />
-                        </td>
-                        <td class="book-title">{book.title}</td>
-                        <td>{book.author}</td>
-                        <td>{book.category || "N/A"}</td>
-                        <td>
-                            <span class="type-badge {book.type}">
-                                {getTypeLabel(book.type)}
-                            </span>
-                        </td>
-                        <td>{formatDate(book.created_at)}</td>
-                        <td class="actions">
-                            <div class="action-group">
-                                <a
-                                    href={`/admin/edit-book/${book.id}`}
-                                    class="icon-btn edit"
-                                >
-                                    <i class="bx bx-edit-alt"></i>
-                                </a>
-                                <button
-                                    type="button"
-                                    class="icon-btn delete"
-                                    onclick={() => deleteBook(book.id, book.title)}
-                                    disabled={deletingId === book.id}
-                                >
-                                    {#if deletingId === book.id}
-                                        <i class="bx bx-loader-alt bx-spin"></i>
-                                    {:else}
-                                        <i class="bx bx-trash"></i>
-                                    {/if}
-                                </button>
-                            </div>
-                        </td>
+                        <th class="checkbox-col">
+                            <input type="checkbox" checked={isAllSelected} onchange={toggleSelectAll} />
+                        </th>
+                        <th>Bìa</th>
+                        <th>Tiêu đề</th>
+                        <th>Tác giả</th>
+                        <th>Thể loại</th>
+                        <th>Loại</th>
+                        <th>Ngày tạo</th>
+                        <th class="actions">Thao tác</th>
                     </tr>
-                {/each}
-                {#if books.length === 0}
+                </thead>
+                <tbody>
+                    {#each books as book}
+                        <tr>
+                            <td class="checkbox-col">
+                                <input type="checkbox" checked={selectedIds.includes(book.id)} onchange={() => toggleSelect(book.id)} />
+                            </td>
+                            <td>
+                                <img
+                                    src={getCoverSrc(book, 'books')}
+                                    alt={book.title}
+                                    class="mini-cover"
+                                    onerror={handleCoverError}
+                                />
+                            </td>
+                            <td class="book-title">{book.title}</td>
+                            <td>{book.author}</td>
+                            <td>{book.category || "N/A"}</td>
+                            <td>
+                                <span class="type-badge {book.type === 'text' || book.type === 'truyện chữ' ? 'text' : 'manga'}">
+                                    {getTypeLabel(book.type)}
+                                </span>
+                            </td>
+                            <td>{formatDate(book.created_at)}</td>
+                            <td class="actions">
+                                <div class="action-group">
+                                    <a href={`/admin/edit-book/${book.id}`} class="icon-btn edit">
+                                        <i class="bx bx-edit-alt"></i>
+                                    </a>
+                                    <button
+                                        type="button"
+                                        class="icon-btn delete"
+                                        onclick={() => deleteItem(book.id, book.title, 'books')}
+                                        disabled={deletingId !== null}
+                                    >
+                                        {#if deletingId === book.id}
+                                            <i class="bx bx-loader-alt bx-spin"></i>
+                                        {:else}
+                                            <i class="bx bx-trash"></i>
+                                        {/if}
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    {/each}
+                    {#if books.length === 0}
+                        <tr>
+                            <td colspan="8" class="empty">Chưa có tác phẩm nào</td>
+                        </tr>
+                    {/if}
+                </tbody>
+            </table>
+        {:else if activeTab === 'audios'}
+            <table>
+                <thead>
                     <tr>
-                        <td colspan="7" class="empty">
-                            Chưa có tác phẩm nào trong kho
-                        </td>
+                        <th class="checkbox-col">
+                            <input type="checkbox" checked={isAllSelected} onchange={toggleSelectAll} />
+                        </th>
+                        <th>Bìa</th>
+                        <th>Tiêu đề</th>
+                        <th>Tác giả / Người đọc</th>
+                        <th>Lượt nghe</th>
+                        <th>Ngày tạo</th>
+                        <th class="actions">Thao tác</th>
                     </tr>
-                {/if}
-            </tbody>
-        </table>
+                </thead>
+                <tbody>
+                    {#each audios as audio}
+                        <tr>
+                            <td class="checkbox-col">
+                                <input type="checkbox" checked={selectedIds.includes(audio.id)} onchange={() => toggleSelect(audio.id)} />
+                            </td>
+                            <td>
+                                <img
+                                    src={getCoverSrc(audio, 'audios')}
+                                    alt={audio.title}
+                                    class="mini-cover"
+                                    onerror={handleCoverError}
+                                />
+                            </td>
+                            <td class="book-title">{audio.title}</td>
+                            <td>{audio.author}</td>
+                            <td>{audio.views || 0}</td>
+                            <td>{formatDate(audio.created_at)}</td>
+                            <td class="actions">
+                                <div class="action-group">
+                                    <a href={`/admin/edit-audio/${audio.id}`} class="icon-btn edit">
+                                        <i class="bx bx-edit-alt"></i>
+                                    </a>
+                                    <button
+                                        type="button"
+                                        class="icon-btn delete"
+                                        onclick={() => deleteItem(audio.id, audio.title, 'audios')}
+                                        disabled={deletingId !== null}
+                                    >
+                                        {#if deletingId === audio.id}
+                                            <i class="bx bx-loader-alt bx-spin"></i>
+                                        {:else}
+                                            <i class="bx bx-trash"></i>
+                                        {/if}
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    {/each}
+                    {#if audios.length === 0}
+                        <tr>
+                            <td colspan="7" class="empty">Chưa có audio nào</td>
+                        </tr>
+                    {/if}
+                </tbody>
+            </table>
+        {:else}
+            <table>
+                <thead>
+                    <tr>
+                        <th class="checkbox-col">
+                            <input type="checkbox" checked={isAllSelected} onchange={toggleSelectAll} />
+                        </th>
+                        <th>Ảnh bìa</th>
+                        <th>Tiêu đề</th>
+                        <th>Tác giả / Đạo diễn</th>
+                        <th>Lượt xem</th>
+                        <th>Ngày tạo</th>
+                        <th class="actions">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {#each videos as video}
+                        <tr>
+                            <td class="checkbox-col">
+                                <input type="checkbox" checked={selectedIds.includes(video.id)} onchange={() => toggleSelect(video.id)} />
+                            </td>
+                            <td>
+                                <img
+                                    src={getCoverSrc(video, 'videos')}
+                                    alt={video.title}
+                                    class="mini-cover video-cover-mini"
+                                    onerror={handleCoverError}
+                                />
+                            </td>
+                            <td class="book-title">{video.title}</td>
+                            <td>{video.author}</td>
+                            <td>{video.views || 0}</td>
+                            <td>{formatDate(video.created_at)}</td>
+                            <td class="actions">
+                                <div class="action-group">
+                                    <a href={`/admin/edit-video/${video.id}`} class="icon-btn edit">
+                                        <i class="bx bx-edit-alt"></i>
+                                    </a>
+                                    <button
+                                        type="button"
+                                        class="icon-btn delete"
+                                        onclick={() => deleteItem(video.id, video.title, 'videos')}
+                                        disabled={deletingId !== null}
+                                    >
+                                        {#if deletingId === video.id}
+                                            <i class="bx bx-loader-alt bx-spin"></i>
+                                        {:else}
+                                            <i class="bx bx-trash"></i>
+                                        {/if}
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    {/each}
+                    {#if videos.length === 0}
+                        <tr>
+                            <td colspan="7" class="empty">Chưa có video nào</td>
+                        </tr>
+                    {/if}
+                </tbody>
+            </table>
+        {/if}
     </div>
 </div>
 
@@ -167,28 +424,15 @@
     }
 
     .header h1 {
+        font-size: 28px;
+        font-weight: 800;
+        color: var(--text-main);
+    }
+
+    .header-actions {
         display: flex;
         align-items: center;
         gap: 12px;
-        font-size: 28px;
-        font-weight: 800;
-        background: var(--primary-gradient);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-    }
-
-    .title-count {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        background: #f1f5f9;
-        color: #64748b;
-        font-size: 14px;
-        font-weight: 700;
-        padding: 4px 10px;
-        border-radius: 20px;
-        -webkit-text-fill-color: #64748b;
-        border: 1px solid #e2e8f0;
     }
 
     .modern-add-btn {
@@ -202,20 +446,74 @@
         border-radius: 8px;
         background: linear-gradient(135deg, #ef4444, #dc2626);
         color: #ffffff;
-        box-shadow: 0 4px 6px -1px rgba(220, 38, 38, 0.2), 0 2px 4px -1px rgba(220, 38, 38, 0.1);
+        box-shadow: 0 4px 6px -1px rgba(220, 38, 38, 0.2);
         transition: all 0.2s ease;
     }
 
     .modern-add-btn:hover {
         transform: translateY(-1px);
-        box-shadow: 0 6px 12px -2px rgba(220, 38, 38, 0.3), 0 3px 6px -2px rgba(220, 38, 38, 0.2);
+        box-shadow: 0 6px 12px -2px rgba(220, 38, 38, 0.3);
+    }
+
+    .bulk-delete-btn {
+        padding: 10px 20px;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 14px;
+        font-weight: 700;
+        border-radius: 8px;
+        background: #fef2f2;
+        color: #ef4444;
+        border: 1px solid #fca5a5;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .bulk-delete-btn:hover {
+        background: #fee2e2;
+        transform: translateY(-1px);
+    }
+
+    .tabs-container {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 24px;
+        border-bottom: 2px solid #e2e8f0;
+        padding-bottom: 8px;
+    }
+
+    .tabs-container button {
+        padding: 10px 20px;
+        font-size: 14px;
+        font-weight: 700;
+        color: #64748b;
+        border-radius: 8px 8px 0 0;
+        border: none;
+        background: transparent;
+        cursor: pointer;
+        position: relative;
+    }
+
+    .tabs-container button.active {
+        color: #ef4444;
+    }
+
+    .tabs-container button.active::after {
+        content: "";
+        position: absolute;
+        bottom: -10px;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: #ef4444;
     }
 
     .table-container {
         background: white;
         overflow: hidden;
         border-radius: 12px;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.025);
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
         border: 1px solid #f1f5f9;
     }
 
@@ -247,12 +545,30 @@
         color: #334155;
     }
 
+    .checkbox-col {
+        width: 48px;
+        padding-right: 0;
+        text-align: center;
+    }
+
+    .checkbox-col input {
+        width: 16px;
+        height: 16px;
+        cursor: pointer;
+    }
+
     .mini-cover {
         width: 40px;
         height: 56px;
         border-radius: 6px;
         object-fit: cover;
         box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .video-cover-mini {
+        aspect-ratio: 16/9;
+        height: auto;
+        width: 60px;
     }
 
     .book-title {
@@ -267,27 +583,17 @@
         font-weight: 700;
         display: inline-block;
         text-align: center;
+        text-transform: uppercase;
     }
 
     .type-badge.text {
         background: rgba(16, 185, 129, 0.1);
         color: #10b981;
     }
+
     .type-badge.manga {
         background: rgba(59, 130, 246, 0.1);
         color: #3b82f6;
-    }
-    .type-badge.video {
-        background: rgba(245, 158, 11, 0.1);
-        color: #f59e0b;
-    }
-    .type-badge.audio {
-        background: rgba(139, 92, 246, 0.1);
-        color: #8b5cf6;
-    }
-    .type-badge.vn {
-        background: rgba(236, 72, 153, 0.1);
-        color: #ec4899;
     }
 
     .actions {
@@ -309,12 +615,11 @@
         justify-content: center;
         border: 1px solid #e2e8f0;
         cursor: pointer;
-        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        transition: all 0.2s;
         font-size: 18px;
         background: #ffffff;
         color: #64748b;
         text-decoration: none;
-        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
     }
 
     .icon-btn:hover {

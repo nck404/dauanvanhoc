@@ -23,9 +23,7 @@
             {#if displayCover}
                 <img src={displayCover} alt={book.title} class="book-cover" />
             {:else}
-                <div class="book-cover-placeholder">
-                    <i class="bx bx-book"></i>
-                </div>
+                <img src="/default_cover.jpg" alt={book.title} class="book-cover" />
             {/if}
             <div class="book-reflection"></div>
         </div>
@@ -45,14 +43,14 @@
 
 <style>
     .book-item {
-        padding: 28px 24px 32px;
+        padding: 24px 18px 24px;
         position: relative;
         overflow: hidden;
         display: flex;
         flex-direction: column;
         align-items: center;
         width: 100%;
-        min-height: 440px;
+        min-height: 420px;
     }
 
     .book-top-meta {
@@ -65,7 +63,7 @@
         color: var(--ink-faint, #8b8676);
         letter-spacing: 0.04em;
         text-transform: uppercase;
-        margin-bottom: 24px;
+        margin-bottom: 18px;
     }
 
     .book-rating {
@@ -75,12 +73,12 @@
 
     .book-cover-wrapper {
         position: relative;
-        width: 140px;
-        height: 200px;
+        width: 150px;
+        height: 215px;
         box-shadow:
-            5px 5px 12px rgba(21, 20, 15, 0.15),
+            4px 4px 10px rgba(21, 20, 15, 0.15),
             1px 1px 2px rgba(255, 255, 255, 0.3) inset;
-        border-radius: 4px 8px 8px 4px;
+        border-radius: 4px 6px 6px 4px;
         background: #fdfdfd;
         perspective: 1500px;
     }
@@ -101,8 +99,8 @@
                 #fff 1px,
                 #f0f0f0 2px
             );
-        box-shadow: 2px 2px 6px rgba(21, 20, 15, 0.1);
-        border-radius: 0 3px 3px 0;
+        box-shadow: 1px 1px 4px rgba(21, 20, 15, 0.1);
+        border-radius: 0 2px 2px 0;
         z-index: 1;
     }
 
@@ -111,11 +109,11 @@
         left: 0;
         top: 0;
         bottom: 0;
-        width: 12px;
+        width: 10px;
         background: rgba(21, 20, 15, 0.2);
         z-index: 10;
         border-right: 1px solid rgba(255, 255, 255, 0.1);
-        box-shadow: 1px 0 5px rgba(21, 20, 15, 0.25);
+        box-shadow: 1px 0 3px rgba(21, 20, 15, 0.25);
         pointer-events: none;
     }
 
@@ -128,22 +126,22 @@
         align-items: center;
         justify-content: center;
         z-index: 2;
-        border-radius: 4px 8px 8px 4px;
-        padding-left: 12px;
+        border-radius: 4px 6px 6px 4px;
+        padding-left: 10px;
     }
 
     .page-text-sim {
-        margin-top: 10px;
+        margin-top: 8px;
         display: flex;
         flex-direction: column;
-        gap: 5px;
-        width: 60px;
+        gap: 4px;
+        width: 50px;
     }
 
     .page-text-sim span {
-        height: 3px;
+        height: 2px;
         background: rgba(21, 20, 15, 0.05);
-        border-radius: 1.5px;
+        border-radius: 1px;
     }
 
     .book-cover-container {
@@ -153,7 +151,7 @@
         transform-origin: left center;
         transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
         transform-style: preserve-3d;
-        border-radius: 4px 8px 8px 4px;
+        border-radius: 4px 6px 6px 4px;
         overflow: hidden;
     }
 
@@ -165,17 +163,6 @@
         width: 100%;
         height: 100%;
         object-fit: cover;
-    }
-
-    .book-cover-placeholder {
-        width: 100%;
-        height: 100%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: linear-gradient(135deg, #f5f5f5, #e0e0e0);
-        color: #ccc;
-        font-size: 36px;
     }
 
     .book-reflection {
@@ -196,17 +183,17 @@
     .read-btn {
         text-decoration: none;
         display: inline-block;
-        box-shadow: 3px 3px 0px #1a1515;
+        box-shadow: 2px 2px 0px #1a1515;
     }
 
     .read-btn:hover {
         background: #d73a2c !important;
-        box-shadow: 2px 2px 0px #1a1515;
+        box-shadow: 1px 1px 0px #1a1515;
         transform: translate(1px, 1px);
     }
 
     .book-info {
-        margin-top: 24px;
+        margin-top: 18px;
         text-align: center;
         width: 100%;
         flex-grow: 1;
@@ -217,7 +204,7 @@
 
     .book-title {
         font-family: 'Space Grotesk', sans-serif;
-        font-size: 16px;
+        font-size: 15px;
         font-weight: 800;
         color: var(--ink, #15140f);
         margin-bottom: 6px;
@@ -225,24 +212,24 @@
         -webkit-line-clamp: 2;
         -webkit-box-orient: vertical;
         overflow: hidden;
-        line-height: 1.35;
+        line-height: 1.3;
         letter-spacing: -0.01em;
     }
 
     .book-author {
         font-family: 'Playfair Display', serif;
         font-style: italic;
-        font-size: 13px;
+        font-size: 12px;
         color: var(--ink-mute, #5a5448);
     }
 
     .arrow-mark {
         position: absolute;
-        right: 20px;
-        bottom: 20px;
-        width: 28px;
-        height: 28px;
-        border: 1px solid rgba(21, 20, 15, 0.16);
+        right: 16px;
+        bottom: 16px;
+        width: 26px;
+        height: 26px;
+        border: 1px solid rgba(21, 20, 15, 0.1);
         border-radius: 50%;
         display: inline-flex;
         align-items: center;
@@ -263,4 +250,3 @@
         height: 12px;
     }
 </style>
-

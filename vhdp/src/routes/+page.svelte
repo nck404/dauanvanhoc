@@ -5,23 +5,32 @@
 
     import { apiFetch } from "$lib/api.js";
 
-    let books = $state([]);
+    let truyenChu = $state([]);
+    let truyenTranh = $state([]);
     let audios = $state([]);
     let videos = $state([]);
 
     let loaded = $state(false);
 
     let categories = [
-        { name: "Truyện tranh", icon: "bx-book-content", url: "/library" },
-        { name: "Truyện chữ", icon: "bx-book-open", url: "/library" },
+        { name: "Truyện tranh", icon: "bx-book-content", url: "/truyen-tranh" },
+        { name: "Truyện chữ", icon: "bx-book-open", url: "/truyen-chu" },
         { name: "Video", icon: "bx-video", url: "/video" },
         { name: "Audio", icon: "bx-headphone", url: "/audio" },
     ];
 
     let searchQuery = $state("");
 
-    let filteredBooks = $derived(
-        books.filter(
+    let filteredTruyenChu = $derived(
+        truyenChu.filter(
+            (book) =>
+                book.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                book.author.toLowerCase().includes(searchQuery.toLowerCase()),
+        ),
+    );
+
+    let filteredTruyenTranh = $derived(
+        truyenTranh.filter(
             (book) =>
                 book.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
                 book.author.toLowerCase().includes(searchQuery.toLowerCase()),
@@ -78,7 +87,8 @@
             const res = await apiFetch("/api/homepage");
             if (res.ok) {
                 const data = await res.json();
-                books = data.books || [];
+                truyenChu = data.truyenChu || [];
+                truyenTranh = data.truyenTranh || [];
                 audios = data.audios || [];
                 videos = data.videos || [];
             }
@@ -264,8 +274,8 @@
     <section class="content-section">
         <div class="sec-rule">
             <span class="roman">I.</span>
-            <span>Tác Phẩm Nổi Bật</span>
-            <a href="/library" class="view-all-link">
+            <span>Truyện Chữ</span>
+            <a href="/truyen-chu" class="view-all-link">
                 <span>Xem tất cả</span>
                 <span class="dot-mark">•</span>
             </a>
@@ -276,8 +286,10 @@
                 {#each Array(SKELETON_COUNT).fill(0) as _, i}
                     <SkeletonCard type="book" class="reveal reveal-delay-{i % 5 + 1}" />
                 {/each}
+            {:else if filteredTruyenChu.length === 0}
+                <div class="empty-state-home">Chưa có truyện chữ nổi bật</div>
             {:else}
-                {#each filteredBooks as book, i}
+                {#each filteredTruyenChu as book, i}
                     <div class="reveal reveal-delay-{i % 5 + 1}">
                         <BookCard {book} />
                     </div>
@@ -286,95 +298,122 @@
         </div>
     </section>
 
-    {#if audios.length > 0}
-        <section class="content-section">
-            <div class="sec-rule">
-                <span class="roman">II.</span>
-                <span>Audio Sách</span>
-                <a href="/audio" class="view-all-link">
-                    <span>Xem tất cả</span>
-                    <span class="dot-mark">•</span>
-                </a>
-            </div>
+    <section class="content-section">
+        <div class="sec-rule">
+            <span class="roman">II.</span>
+            <span>Truyện Tranh</span>
+            <a href="/truyen-tranh" class="view-all-link">
+                <span>Xem tất cả</span>
+                <span class="dot-mark">•</span>
+            </a>
+        </div>
 
-            <div class="media-grid format-audio">
-                {#if !loaded}
-                    {#each Array(SKELETON_COUNT).fill(0) as _, i}
-                        <div class="reveal reveal-delay-{i % 5 + 1}">
-                            <SkeletonCard type="audio" />
-                        </div>
-                    {/each}
-                {:else}
-                    {#each audios as audio, i}
-                        <a href="/audio/{audio.id}" class="comic-card media-card audio-list-card reveal reveal-delay-{i % 5 + 1}">
-                        <div class="cover-box">
-                            {#if audio.cover}
-                                <img src={audio.cover} alt="Cover" />
-                            {:else}
-                                <div class="placeholder">
-                                    <i class="bx bxs-music"></i>
-                                </div>
-                            {/if}
-                            <div class="play-overlay">
-                                <i class="bx bx-play"></i>
-                            </div>
-                        </div>
-                        <div class="info">
-                            <span class="index-tag">Audio</span>
-                            <h3>{audio.title}</h3>
-                            <p>{audio.author}</p>
-                        </div>
-                    </a>
+        <div class="book-grid">
+            {#if !loaded}
+                {#each Array(SKELETON_COUNT).fill(0) as _, i}
+                    <SkeletonCard type="book" class="reveal reveal-delay-{i % 5 + 1}" />
+                {/each}
+            {:else if filteredTruyenTranh.length === 0}
+                <div class="empty-state-home">Chưa có truyện tranh nổi bật</div>
+            {:else}
+                {#each filteredTruyenTranh as book, i}
+                    <div class="reveal reveal-delay-{i % 5 + 1}">
+                        <BookCard {book} />
+                    </div>
                 {/each}
             {/if}
-            </div>
-        </section>
-    {/if}
+        </div>
+    </section>
 
-    {#if videos.length > 0}
-        <section class="content-section">
-            <div class="sec-rule">
-                <span class="roman">III.</span>
-                <span>Video Tư Liệu</span>
-                <a href="/video" class="view-all-link">
-                    <span>Xem tất cả</span>
-                    <span class="dot-mark">•</span>
-                </a>
-            </div>
+    <section class="content-section">
+        <div class="sec-rule">
+            <span class="roman">III.</span>
+            <span>Audio Sách</span>
+            <a href="/audio" class="view-all-link">
+                <span>Xem tất cả</span>
+                <span class="dot-mark">•</span>
+            </a>
+        </div>
 
-            <div class="media-grid format-video">
-                {#if !loaded}
-                    {#each Array(SKELETON_COUNT).fill(0) as _, i}
-                        <div class="reveal reveal-delay-{i % 5 + 1}">
-                            <SkeletonCard type="video" />
-                        </div>
-                    {/each}
-                {:else}
-                    {#each videos as video, i}
-                        <a href="/video/{video.id}" class="comic-card media-card video-list-card reveal reveal-delay-{i % 5 + 1}">
-                        <div class="cover-box">
-                            {#if video.cover}
-                                <img src={video.cover} alt="Cover" />
-                            {:else}
-                                <div class="placeholder">
-                                    <i class="bx bx-video"></i>
-                                </div>
-                            {/if}
-                            <div class="play-overlay">
-                                <i class="bx bx-play"></i>
+        <div class="media-grid format-audio">
+            {#if !loaded}
+                {#each Array(SKELETON_COUNT).fill(0) as _, i}
+                    <div class="reveal reveal-delay-{i % 5 + 1}">
+                        <SkeletonCard type="audio" />
+                    </div>
+                {/each}
+            {:else if audios.length === 0}
+                <div class="empty-state-home">Chưa có audio nổi bật</div>
+            {:else}
+                {#each audios as audio, i}
+                    <a href="/audio/{audio.id}" class="comic-card media-card audio-list-card reveal reveal-delay-{i % 5 + 1}">
+                    <div class="cover-box">
+                        {#if audio.cover}
+                            <img src={audio.cover} alt="Cover" />
+                        {:else}
+                            <div class="placeholder">
+                                <i class="bx bxs-music"></i>
                             </div>
+                        {/if}
+                        <div class="play-overlay">
+                            <i class="bx bx-play"></i>
                         </div>
-                        <div class="info">
-                            <span class="index-tag">Video</span>
-                            <h3>{video.title}</h3>
-                            <p>{video.author}</p>
-                        </div>
-                    </a>
+                    </div>
+                    <div class="info">
+                        <span class="index-tag">Audio</span>
+                        <h3>{audio.title}</h3>
+                        <p>{audio.author}</p>
+                    </div>
+                </a>
                 {/each}
             {/if}
-            </div>
-        </section>
-    {/if}
+        </div>
+    </section>
+
+    <section class="content-section">
+        <div class="sec-rule">
+            <span class="roman">IV.</span>
+            <span>Video Tư Liệu</span>
+            <a href="/video" class="view-all-link">
+                <span>Xem tất cả</span>
+                <span class="dot-mark">•</span>
+            </a>
+        </div>
+
+        <div class="media-grid format-video">
+            {#if !loaded}
+                {#each Array(SKELETON_COUNT).fill(0) as _, i}
+                    <div class="reveal reveal-delay-{i % 5 + 1}">
+                        <SkeletonCard type="video" />
+                    </div>
+                {/each}
+            {:else if videos.length === 0}
+                <div class="empty-state-home">Chưa có video nổi bật</div>
+            {:else}
+                {#each videos as video, i}
+                    <a href="/video/{video.id}" class="comic-card media-card video-list-card reveal reveal-delay-{i % 5 + 1}">
+                    <div class="cover-box">
+                        {#if video.cover}
+                            <img src={video.cover} alt="Cover" />
+                        {:else}
+                            <div class="placeholder">
+                                <i class="bx bx-video"></i>
+                            </div>
+                        {/if}
+                        <div class="play-overlay">
+                            <i class="bx bx-play"></i>
+                        </div>
+                    </div>
+                    <div class="info">
+                        <span class="index-tag">Video</span>
+                        <h3>{video.title}</h3>
+                        <p>{video.author}</p>
+                    </div>
+                </a>
+                {/each}
+            {/if}
+        </div>
+    </section>
 </div>
 
 <style>
@@ -862,8 +901,8 @@
 
     .book-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-        gap: 32px;
+        grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+        gap: 20px;
         padding: 20px 0;
     }
 

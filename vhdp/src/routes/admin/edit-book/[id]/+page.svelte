@@ -28,7 +28,7 @@
         if (previewUrl) return previewUrl;
         if (book?.cover_url) return book.cover_url;
         if (book?.cover) return book.cover;
-        return "/placeholder-book.jpg";
+        return "/default_cover.jpg";
     }
 
     async function loadBook() {

@@ -101,23 +101,26 @@
             {#if !isExpanded}
                 <div class="compact-view">
                     <div class="nav-links-compact">
-                        <a href="/" class="nav-item {page.url.pathname === '/' ? 'active' : ''}">
+                        <a href="/" class="nav-item {page.url.pathname === '/' ? 'active' : ''}" title="Trang chủ">
                             <i class="bx bxs-home-heart"></i>
                         </a>
-                        <a href="/library" class="nav-item {page.url.pathname.startsWith('/library') ? 'active' : ''}">
+                        <a href="/truyen-chu" class="nav-item {page.url.pathname.startsWith('/truyen-chu') ? 'active' : ''}" title="Truyện chữ">
                             <i class="bx bxs-book-open"></i>
                         </a>
-                        <a href="/audio" class="nav-item {page.url.pathname.startsWith('/audio') ? 'active' : ''}">
+                        <a href="/truyen-tranh" class="nav-item {page.url.pathname.startsWith('/truyen-tranh') ? 'active' : ''}" title="Truyện tranh">
+                            <i class="bx bxs-book-content"></i>
+                        </a>
+                        <a href="/audio" class="nav-item {page.url.pathname.startsWith('/audio') ? 'active' : ''}" title="Audio Sách">
                             <i class="bx bxs-headphone"></i>
                         </a>
-                        <a href="/video" class="nav-item {page.url.pathname.startsWith('/video') ? 'active' : ''}">
+                        <a href="/video" class="nav-item {page.url.pathname.startsWith('/video') ? 'active' : ''}" title="Video Tư liệu">
                             <i class="bx bxs-movie-play"></i>
                         </a>
-                        <a href="/map" class="nav-item {page.url.pathname.startsWith('/map') ? 'active' : ''}">
-                            <i class="bx bxs-map-alt"></i>
+                        <a href="/library" class="nav-item {page.url.pathname.startsWith('/library') ? 'active' : ''}" title="Thư viện của bạn">
+                            <i class="bx bxs-bookmark-heart"></i>
                         </a>
                         {#if user?.role === 'admin'}
-                            <a href="/admin" class="nav-item {page.url.pathname.startsWith('/admin') ? 'active' : ''}">
+                            <a href="/admin" class="nav-item {page.url.pathname.startsWith('/admin') ? 'active' : ''}" title="Quản trị">
                                 <i class="bx bxs-dashboard"></i>
                             </a>
                         {/if}
