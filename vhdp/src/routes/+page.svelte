@@ -1194,4 +1194,11 @@
         text-transform: uppercase;
         color: var(--newsprint-ink);
     }
+
+    @media (max-width: 900px) {
+        .media-grid {
+            grid-template-columns: 1fr;
+            gap: 24px;
+        }
+    }
 </style>
