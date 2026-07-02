@@ -3,29 +3,22 @@
     let displayCover = $derived(book.cover_url || book.cover);
 </script>
 
-<div class="book-item comic-card">
+<a href="/read/{book.id}" class="book-item">
     <div class="book-top-meta">
         <span class="book-rating">★ {book.rating}</span>
-        <span class="book-chapters-count">{book.chapters} chương</span>
+        <span class="book-chapters-count">{book.chapters} CH</span>
     </div>
 
     <div class="book-cover-wrapper">
-        <div class="book-spine"></div>
-
-        <div class="book-internal-pages">
-            <a href="/read/{book.id}" class="comic-btn comic-btn--red comic-btn--sm read-btn">Đọc</a>
-            <div class="page-text-sim">
-                <span></span><span></span><span></span>
-            </div>
-        </div>
-
         <div class="book-cover-container">
             {#if displayCover}
                 <img src={displayCover} alt={book.title} class="book-cover" />
             {:else}
-                <img src="/default_cover.jpg" alt={book.title} class="book-cover" />
+                <div class="book-cover-placeholder">
+                    <div class="halftone-pattern"></div>
+                    <span class="placeholder-icon">§</span>
+                </div>
             {/if}
-            <div class="book-reflection"></div>
         </div>
     </div>
 
@@ -34,23 +27,31 @@
         <p class="book-author">{book.author}</p>
     </div>
 
-    <a href="/read/{book.id}" class="arrow-mark">
-        <svg viewBox="0 0 24 24">
-            <path d="M5 19L19 5M19 5H8M19 5v11" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-    </a>
-</div>
+    <div class="book-index">
+        Fig. {String(book.id || 1).padStart(3, '0')}
+    </div>
+</a>
 
 <style>
     .book-item {
-        padding: 24px 18px 24px;
-        position: relative;
-        overflow: hidden;
         display: flex;
         flex-direction: column;
-        align-items: center;
+        align-items: flex-start;
         width: 100%;
-        min-height: 420px;
+        padding: 16px;
+        text-decoration: none;
+        color: inherit;
+        position: relative;
+        background: var(--newsprint-white);
+        border: 1px solid var(--newsprint-ink);
+        border-radius: 0;
+        transition: all 0.2s ease-out;
+    }
+
+    .book-item:hover {
+        background: var(--newsprint-surface);
+        box-shadow: var(--shadow-hard);
+        transform: translate(-2px, -2px);
     }
 
     .book-top-meta {
@@ -60,193 +61,114 @@
         align-items: center;
         font-family: 'JetBrains Mono', monospace;
         font-size: 10px;
-        color: var(--ink-faint, #8b8676);
-        letter-spacing: 0.04em;
+        font-weight: 600;
+        letter-spacing: 0.08em;
         text-transform: uppercase;
-        margin-bottom: 18px;
+        margin-bottom: 14px;
+        color: var(--newsprint-neutral-500);
     }
 
     .book-rating {
-        color: var(--coral, #ed6f5c);
+        color: var(--newsprint-red);
         font-weight: 700;
+    }
+
+    .book-chapters-count {
+        font-weight: 600;
     }
 
     .book-cover-wrapper {
         position: relative;
-        width: 150px;
-        height: 215px;
-        box-shadow:
-            4px 4px 10px rgba(21, 20, 15, 0.15),
-            1px 1px 2px rgba(255, 255, 255, 0.3) inset;
-        border-radius: 4px 6px 6px 4px;
-        background: #fdfdfd;
-        perspective: 1500px;
-    }
-
-    .book-cover-wrapper::after {
-        content: "";
-        position: absolute;
-        top: 2px;
-        bottom: 2px;
-        right: -8px;
-        width: 10px;
-        background: #fdfdfd;
-        background-image:
-            linear-gradient(to right, rgba(21, 20, 15, 0.08), transparent 2px),
-            repeating-linear-gradient(
-                to bottom,
-                #fff 0px,
-                #fff 1px,
-                #f0f0f0 2px
-            );
-        box-shadow: 1px 1px 4px rgba(21, 20, 15, 0.1);
-        border-radius: 0 2px 2px 0;
-        z-index: 1;
-    }
-
-    .book-spine {
-        position: absolute;
-        left: 0;
-        top: 0;
-        bottom: 0;
-        width: 10px;
-        background: rgba(21, 20, 15, 0.2);
-        z-index: 10;
-        border-right: 1px solid rgba(255, 255, 255, 0.1);
-        box-shadow: 1px 0 3px rgba(21, 20, 15, 0.25);
-        pointer-events: none;
-    }
-
-    .book-internal-pages {
-        position: absolute;
-        inset: 0;
-        background: #fdfdfd;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        z-index: 2;
-        border-radius: 4px 6px 6px 4px;
-        padding-left: 10px;
-    }
-
-    .page-text-sim {
-        margin-top: 8px;
-        display: flex;
-        flex-direction: column;
-        gap: 4px;
-        width: 50px;
-    }
-
-    .page-text-sim span {
-        height: 2px;
-        background: rgba(21, 20, 15, 0.05);
-        border-radius: 1px;
+        width: 100%;
+        aspect-ratio: 2 / 3;
+        overflow: hidden;
+        border: 2px solid var(--newsprint-ink);
+        background: var(--newsprint-surface);
     }
 
     .book-cover-container {
-        position: absolute;
-        inset: 0;
-        z-index: 5;
-        transform-origin: left center;
-        transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-        transform-style: preserve-3d;
-        border-radius: 4px 6px 6px 4px;
+        width: 100%;
+        height: 100%;
         overflow: hidden;
-    }
-
-    .book-item:hover .book-cover-container {
-        transform: rotateY(-110deg);
     }
 
     .book-cover {
         width: 100%;
         height: 100%;
         object-fit: cover;
+        display: block;
+        filter: grayscale(100%);
+        transition: all 0.3s ease-out;
     }
 
-    .book-reflection {
+    .book-item:hover .book-cover {
+        filter: grayscale(100%) sepia(50%);
+        transform: scale(1.02);
+    }
+
+    .book-cover-placeholder {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        background: var(--newsprint-surface);
+    }
+
+    .halftone-pattern {
         position: absolute;
-        top: 0;
-        left: 8px;
-        right: 0;
-        bottom: 0;
-        background: linear-gradient(
-            105deg,
-            rgba(255, 255, 255, 0.15) 0%,
-            rgba(255, 255, 255, 0.03) 20%,
-            transparent 50%
-        );
-        pointer-events: none;
+        inset: 0;
+        background: radial-gradient(var(--newsprint-ink) 1px, transparent 1px);
+        background-size: 16px 16px;
+        opacity: 0.1;
     }
 
-    .read-btn {
-        text-decoration: none;
-        display: inline-block;
-        box-shadow: 2px 2px 0px #1a1515;
-    }
-
-    .read-btn:hover {
-        background: #d73a2c !important;
-        box-shadow: 1px 1px 0px #1a1515;
-        transform: translate(1px, 1px);
+    .placeholder-icon {
+        position: relative;
+        z-index: 1;
+        font-family: 'Playfair Display', serif;
+        font-size: 48px;
+        font-weight: 700;
+        color: var(--newsprint-neutral-400);
     }
 
     .book-info {
-        margin-top: 18px;
-        text-align: center;
+        margin-top: 14px;
         width: 100%;
-        flex-grow: 1;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
     }
 
     .book-title {
-        font-family: 'Space Grotesk', sans-serif;
-        font-size: 15px;
-        font-weight: 800;
-        color: var(--ink, #15140f);
-        margin-bottom: 6px;
+        font-family: 'Playfair Display', serif;
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--newsprint-ink);
+        margin-bottom: 4px;
         display: -webkit-box;
         -webkit-line-clamp: 2;
         -webkit-box-orient: vertical;
         overflow: hidden;
-        line-height: 1.3;
-        letter-spacing: -0.01em;
+        line-height: 1.35;
     }
 
     .book-author {
         font-family: 'Playfair Display', serif;
         font-style: italic;
-        font-size: 12px;
-        color: var(--ink-mute, #5a5448);
+        font-size: 13px;
+        color: var(--newsprint-neutral-500);
+        line-height: 1.4;
     }
 
-    .arrow-mark {
-        position: absolute;
-        right: 16px;
-        bottom: 16px;
-        width: 26px;
-        height: 26px;
-        border: 1px solid rgba(21, 20, 15, 0.1);
-        border-radius: 50%;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        color: var(--ink, #15140f);
-        transition: all 0.2s ease;
-        background: transparent;
-    }
-
-    .book-item:hover .arrow-mark {
-        background: var(--coral, #ed6f5c);
-        border-color: var(--coral, #ed6f5c);
-        color: white;
-    }
-
-    .arrow-mark svg {
-        width: 12px;
-        height: 12px;
+    .book-index {
+        width: 100%;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 11px;
+        font-weight: 500;
+        color: var(--newsprint-neutral-400);
+        margin-top: 12px;
+        padding-top: 12px;
+        border-top: 1px solid var(--newsprint-divider);
+        text-transform: uppercase;
+        letter-spacing: 0.15em;
     }
 </style>

@@ -65,37 +65,39 @@
     }
 </script>
 
-<div class="auth-page">
-    <div class="stars-container">
-        <div class="star s" style="top: 10%; left: 15%;"></div>
-        <div class="star m" style="top: 25%; left: 85%;"></div>
-        <div class="star l" style="top: 60%; left: 5%;"></div>
-    </div>
-
-    <div class="auth-card">
-        <h1 class="gradient-text">Chào mừng trở lại</h1>
-        <p class="subtitle">Tiếp tục hành trình văn học của bạn ✨</p>
+<div class="auth-page dot-grid-bg">
+    <div class="auth-card newsprint-card">
+        <div class="auth-header border-b-4 border-[#111111] pb-6 mb-8">
+            <span class="label font-mono text-[10px] uppercase tracking-[0.2em] text-[#CC0000] font-bold block mb-4 flex items-center gap-3">
+                <span class="w-8 h-[2px] bg-[#CC0000]"></span>
+                Đăng nhập
+            </span>
+            <h1 class="font-serif font-black text-4xl text-[#111111] leading-tight">
+                Chào mừng trở lại<span class="text-[#CC0000]">.</span>
+            </h1>
+        </div>
 
         <form onsubmit={handleLogin} class="auth-form">
-            <div class="input-group">
-                <label for="username">Tên đăng nhập</label>
-                <div class="input-wrapper">
-                    <i class="bx bx-user"></i>
-                    <input
-                        type="text"
-                        id="username"
-                        placeholder="Nhập tên đăng nhập"
-                        bind:value={username}
-                        autocomplete="username"
-                        disabled={loading}
-                    />
-                </div>
+            <div class="input-group mb-6">
+                <label for="username" class="font-mono text-[10px] uppercase tracking-[0.15em] font-bold text-[#111111] block mb-3">
+                    Tên đăng nhập
+                </label>
+                <input
+                    type="text"
+                    id="username"
+                    placeholder="Nhập tên đăng nhập"
+                    bind:value={username}
+                    autocomplete="username"
+                    disabled={loading}
+                    class="newsprint-input w-full"
+                />
             </div>
 
-            <div class="input-group">
-                <label for="password">Mật khẩu</label>
-                <div class="input-wrapper">
-                    <i class="bx bx-lock-alt"></i>
+            <div class="input-group mb-6">
+                <label for="password" class="font-mono text-[10px] uppercase tracking-[0.15em] font-bold text-[#111111] block mb-3">
+                    Mật khẩu
+                </label>
+                <div class="relative">
                     <input
                         type={showPassword ? "text" : "password"}
                         id="password"
@@ -103,31 +105,32 @@
                         bind:value={password}
                         autocomplete="current-password"
                         disabled={loading}
+                        class="newsprint-input w-full pr-14"
                     />
                     <button
                         type="button"
-                        class="toggle-password"
+                        class="toggle-password absolute right-0 bottom-0 w-12 h-12 border border-[#111111] bg-[#F9F9F7] flex items-center justify-center text-[#111111] hover:bg-[#111111] hover:text-[#F9F9F7] transition-all duration-200"
                         onclick={togglePasswordVisibility}
                         disabled={loading}
                         aria-label="Hiển thị/Ẩn mật khẩu"
                     >
-                        <i class={`bx ${showPassword ? "bx-hide" : "bx-show"}`}></i>
+                        <i class={`bx ${showPassword ? "bx-hide" : "bx-show"} text-xl`}></i>
                     </button>
                 </div>
             </div>
 
             {#if errorMsg}
-                <div class="error-container">
-                    <p class="error-msg">
-                        <i class="bx bx-error-circle"></i>
+                <div class="error-container mb-6 border-l-4 border-[#CC0000] bg-[#CC0000]/5 px-4 py-4">
+                    <p class="error-msg font-sans text-sm text-[#CC0000] flex items-center gap-2">
+                        <i class="bx bx-error-circle text-lg"></i>
                         <span>{errorMsg}</span>
                     </p>
                 </div>
             {/if}
 
-            <button type="submit" class="comic-btn comic-btn--red comic-btn--lg auth-submit" disabled={loading || !username.trim() || !password}>
+            <button type="submit" class="newsprint-btn newsprint-btn--primary w-full py-4 mt-6 text-sm" disabled={loading || !username.trim() || !password}>
                 {#if loading}
-                    <span class="loading-spinner"></span>
+                    <span class="loading-spinner inline-block w-4 h-4 border-2 border-[#F9F9F7]/30 border-t-[#F9F9F7] rounded-none animate-spin mr-2"></span>
                     Đang xử lý...
                 {:else}
                     Đăng nhập
@@ -135,12 +138,14 @@
             </button>
         </form>
 
-        <p class="auth-footer">
-            Chưa có tài khoản? <a href="/register">Đăng ký ngay</a>
-        </p>
+        <div class="auth-divider my-8 flex items-center gap-4">
+            <span class="flex-1 h-[1px] bg-neutral-200"></span>
+            <span class="font-mono text-xs uppercase tracking-widest text-neutral-400">hoặc</span>
+            <span class="flex-1 h-[1px] bg-neutral-200"></span>
+        </div>
 
-        <p class="forgot-password">
-            <a href="#forgot">Quên mật khẩu?</a>
+        <p class="auth-footer text-center font-sans text-sm text-neutral-600">
+            Chưa có tài khoản? <a href="/register" class="text-[#CC0000] font-bold hover:underline underline-offset-4 decoration-2">Đăng ký ngay</a>
         </p>
     </div>
 </div>
@@ -153,53 +158,15 @@
         justify-content: center;
         padding: 80px 20px 20px 20px;
         position: relative;
-        background: linear-gradient(
-            135deg,
-            rgba(225, 91, 91, 0.08) 0%,
-            rgba(225, 91, 91, 0.02) 100%
-        );
     }
 
     .auth-card {
-        background: rgba(255, 255, 255, 0.95);
-        backdrop-filter: blur(10px);
         width: 100%;
-        max-width: 420px;
-        padding: 40px;
-        border-radius: 24px;
-        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.12);
-        border: 1px solid rgba(225, 91, 91, 0.1);
-        text-align: center;
-        z-index: 10;
-        animation: slideUp 0.6s ease-out;
-    }
-
-    @keyframes slideUp {
-        from {
-            opacity: 0;
-            transform: translateY(30px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
-
-    .gradient-text {
-        background: linear-gradient(135deg, #e15b5b, #d43f3f);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-        font-size: 32px;
-        margin-bottom: 8px;
-        color: var(--text-main);
-        font-weight: 700;
-    }
-
-    .subtitle {
-        color: var(--text-muted);
-        margin-bottom: 32px;
-        font-size: 14px;
+        max-width: 460px;
+        padding: 48px;
+        background: var(--newsprint-white);
+        border: 2px solid var(--newsprint-ink);
+        box-shadow: 8px 8px 0px 0px var(--newsprint-ink);
     }
 
     .auth-form {
@@ -207,267 +174,40 @@
     }
 
     .input-group {
-        margin-bottom: 20px;
-    }
-
-    .input-group label {
-        display: block;
-        font-size: 14px;
-        font-weight: 600;
-        margin-bottom: 8px;
-        color: var(--text-main);
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }
-
-    .input-wrapper {
-        position: relative;
-        display: flex;
-        align-items: center;
-    }
-
-    .input-wrapper i {
-        position: absolute;
-        left: 16px;
-        font-size: 20px;
-        color: var(--accent-dark);
-        pointer-events: none;
-    }
-
-    .input-wrapper input {
-        width: 100%;
-        padding: 12px 48px 12px 48px;
-        border-radius: 12px;
-        border: 2px solid var(--accent-light);
-        outline: none;
-        font-family: inherit;
-        font-size: 16px;
-        transition: all 0.3s ease;
-        background: white;
-    }
-
-    .input-wrapper input:focus {
-        border-color: var(--accent-dark);
-        box-shadow: 0 0 0 3px rgba(225, 91, 91, 0.1);
-        background: white;
-    }
-
-    .input-wrapper input:disabled {
-        background: var(--accent-light);
-        cursor: not-allowed;
-        opacity: 0.6;
+        margin-bottom: 24px;
     }
 
     .toggle-password {
-        position: absolute;
-        right: 12px;
-        z-index: 10;
-        padding: 0;
         background: transparent;
         border: none;
-        width: 36px;
-        height: 36px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 20px;
-        color: var(--accent-dark);
-        border-radius: 50%;
         cursor: pointer;
-        transition: background 0.2s, color 0.2s;
+        transition: all 0.2s ease-out;
+        border-radius: 0px;
     }
 
     .toggle-password:hover:not(:disabled) {
-        background: rgba(0, 0, 0, 0.05);
-        color: var(--coral);
+        background: var(--newsprint-ink);
+        color: var(--newsprint-white);
     }
 
     .toggle-password:disabled {
-        opacity: 0.55;
-        cursor: not-allowed;
-    }
-
-    .error-container {
-        margin-bottom: 20px;
-        animation: shake 0.4s ease-in-out;
-    }
-
-    @keyframes shake {
-        0%,
-        100% {
-            transform: translateX(0);
-        }
-        25% {
-            transform: translateX(-5px);
-        }
-        75% {
-            transform: translateX(5px);
-        }
-    }
-
-    .error-msg {
-        color: #e15b5b;
-        background: rgba(225, 91, 91, 0.1);
-        border-left: 4px solid #e15b5b;
-        font-size: 14px;
-        padding: 12px;
-        border-radius: 8px;
-        display: flex;
-        align-items: flex-start;
-        gap: 10px;
-        margin: 0;
-    }
-
-    .error-msg i {
-        flex-shrink: 0;
-        margin-top: 2px;
-    }
-
-    .error-msg span {
-        flex: 1;
-        line-height: 1.4;
-    }
-
-    .auth-submit {
-        width: 100%;
-        padding: 14px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
-    }
-
-    .auth-submit:hover:not(:disabled) {
-        box-shadow: 2px 2px 0px #1a1515;
-        transform: translate(2px, 2px);
-    }
-
-    .auth-submit:active:not(:disabled) {
-        box-shadow: 0px 0px 0px #1a1515;
-        transform: translate(4px, 4px);
-    }
-
-    .auth-submit:disabled {
-        opacity: 0.55;
+        opacity: 0.5;
         cursor: not-allowed;
     }
 
     .loading-spinner {
-        display: inline-block;
-        width: 16px;
-        height: 16px;
-        border: 2px solid rgba(255, 255, 255, 0.3);
-        border-top-color: white;
-        border-radius: 50%;
         animation: spin 0.8s linear infinite;
+        border-radius: 0px;
     }
 
     @keyframes spin {
-        to {
-            transform: rotate(360deg);
-        }
-    }
-
-    .auth-footer {
-        margin-top: 32px;
-        font-size: 14px;
-        color: var(--text-muted);
-        margin-bottom: 16px;
-    }
-
-    .auth-footer a {
-        color: var(--accent-dark);
-        font-weight: 700;
-        text-decoration: none;
-        transition: color 0.3s ease;
-    }
-
-    .auth-footer a:hover {
-        text-decoration: underline;
-    }
-
-    .forgot-password {
-        text-align: center;
-        font-size: 13px;
-        color: var(--text-muted);
-        margin: 0;
-    }
-
-    .forgot-password a {
-        color: var(--accent-dark);
-        text-decoration: none;
-        font-weight: 600;
-        transition: color 0.3s ease;
-    }
-
-    .forgot-password a:hover {
-        text-decoration: underline;
-    }
-
-    .stars-container {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        pointer-events: none;
-        z-index: 1;
-    }
-
-    .star {
-        position: absolute;
-        background: var(--accent-dark);
-        clip-path: polygon(
-            50% 0%,
-            61% 35%,
-            98% 35%,
-            68% 57%,
-            79% 91%,
-            50% 70%,
-            21% 91%,
-            32% 57%,
-            2% 35%,
-            39% 35%
-        );
-        opacity: 0.3;
-        animation: float 4s ease-in-out infinite;
-    }
-
-    .star.s {
-        width: 40px;
-        height: 40px;
-    }
-    .star.m {
-        width: 60px;
-        height: 60px;
-    }
-    .star.l {
-        width: 80px;
-        height: 80px;
-    }
-
-    @keyframes float {
-        0%,
-        100% {
-            transform: translateY(0) rotate(0deg);
-        }
-        50% {
-            transform: translateY(-20px) rotate(10deg);
-        }
+        to { transform: rotate(360deg); }
     }
 
     @media (max-width: 480px) {
         .auth-card {
             padding: 32px 24px;
-        }
-
-        .gradient-text {
-            font-size: 28px;
-        }
-
-        .input-wrapper input {
-            font-size: 16px;
+            box-shadow: 4px 4px 0px 0px var(--newsprint-ink);
         }
     }
 </style>
-

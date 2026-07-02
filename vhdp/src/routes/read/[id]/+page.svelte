@@ -1,8 +1,6 @@
 <script>
     import { onMount, tick } from "svelte";
     import { browser } from "$app/environment";
-    import { enhance } from "$app/forms";
-
     import { page } from "$app/state";
     import { apiFetch } from "$lib/api.js";
 
@@ -20,6 +18,67 @@
 
     let paginatedContent = $state([]);
     let handleResizeFn;
+
+    let currentChapterIndex = $state(0);
+    let viewMode = $state("scroll");
+    let currentPageIndex = $state(0);
+    let comicWidth = $state("medium");
+
+    let currentChapter = $derived(chapters[currentChapterIndex] || null);
+    let comicImages = $derived(currentChapter ? extractImages(currentChapter.content) : []);
+
+    function extractImages(content) {
+        if (!content) return [];
+        const imgRegex = /<img[^>]+src=["']([^"']+)["']/g;
+        const urls = [];
+        let match;
+        while ((match = imgRegex.exec(content)) !== null) {
+            urls.push(match[1]);
+        }
+        if (urls.length > 0) return urls;
+
+        const urlRegex = /(https?:\/\/[^\s$.?#].[^\s]*\.(?:png|jpg|jpeg|gif|webp))/gi;
+        const rawUrls = content.match(urlRegex);
+        if (rawUrls) return rawUrls;
+
+        return content.split(/\n+/).map(l => l.trim()).filter(l => l.startsWith('/') || l.startsWith('http'));
+    }
+
+    function nextChapter() {
+        if (currentChapterIndex < chapters.length - 1) {
+            currentChapterIndex++;
+            currentPageIndex = 0;
+            if (typeof window !== "undefined") {
+                window.scrollTo({ top: 0, behavior: "smooth" });
+            }
+        }
+    }
+
+    function prevChapter() {
+        if (currentChapterIndex > 0) {
+            currentChapterIndex--;
+            currentPageIndex = 0;
+            if (typeof window !== "undefined") {
+                window.scrollTo({ top: 0, behavior: "smooth" });
+            }
+        }
+    }
+
+    function nextPage() {
+        if (currentPageIndex < comicImages.length - 1) {
+            currentPageIndex++;
+        } else {
+            nextChapter();
+        }
+    }
+
+    function prevPage() {
+        if (currentPageIndex > 0) {
+            currentPageIndex--;
+        } else {
+            prevChapter();
+        }
+    }
 
     function loadScript(src) {
         return new Promise((resolve, reject) => {
@@ -60,20 +119,25 @@
 
     async function ensureJQueryAndTurn() {
         if (typeof window === "undefined") return;
-
         await loadScript("/jquery.js");
-
         if (window.jQuery && !window.$) window.$ = window.jQuery;
         if (window.$ && !window.jQuery) window.jQuery = window.$;
-
         await loadScript("/turn.js");
-
         if (window.jQuery && !window.$) window.$ = window.jQuery;
         if (window.$ && !window.jQuery) window.jQuery = window.$;
     }
 
     async function paginate() {
         if (!browser || !chapters || chapters.length === 0) return;
+        
+        // Wait for measureElement to be bound
+        if (!measureElement) {
+            await tick();
+            if (!measureElement) {
+                console.warn('measureElement not available, skipping pagination');
+                return;
+            }
+        }
 
         const PAGE_HEIGHT = 800;
         const PAGE_PADDING_Y = 60 * 2;
@@ -263,8 +327,6 @@
 
     onMount(async () => {
         if (browser) {
-            await ensureJQueryAndTurn();
-            document.body.classList.add("paper-theme");
             const bookId = page.params.id;
             try {
                 const res = await apiFetch(`/api/books/${bookId}`);
@@ -273,12 +335,22 @@
                     book = result.book;
                     chapters = result.chapters || [];
                     isBookmarked = result.isBookmarked;
-                    setTimeout(paginate, 500);
+
+                    if (book.type === "truyện tranh" || book.type === "comic" || book.type === "manga") {
+                        loading = false;
+                        isLoaded = true;
+                    } else {
+                        await ensureJQueryAndTurn();
+                        document.body.classList.add("paper-theme");
+                        setTimeout(paginate, 500);
+                    }
                 }
             } catch (e) {
                 console.error(e);
             } finally {
-                loading = false;
+                if (book && (book.type === "truyện tranh" || book.type === "comic" || book.type === "manga")) {
+                    loading = false;
+                }
             }
 
             return () => {
@@ -302,83 +374,454 @@
     <title>{book ? book.title : "Đang tải"} - Đọc truyện</title>
 </svelte:head>
 
-<div
-    bind:this={measureElement}
-    class="measure-layer"
-    style="--fz: {fontSize}px; --lh: {lineHeight};"
-></div>
+{#if loading}
+    <div class="loader-cover">
+        <div class="spinner"></div>
+    </div>
+{:else if book}
+    {#if book.type === "truyện tranh" || book.type === "comic" || book.type === "manga"}
+        <div class="comic-reader-viewport">
+            <header class="comic-header-bar">
+                <div class="header-left">
+                    <a href="/truyen-tranh" class="comic-back-link">
+                        <i class="bx bx-left-arrow-alt"></i>
+                    </a>
+                    <div class="comic-title-meta">
+                        <h1>{book.title}</h1>
+                        <p>{book.author}</p>
+                    </div>
+                </div>
 
-<div class="reader-container">
-    <a href="/library" class="floating-btn back" title="Quay lại">
-        <i class="bx bx-left-arrow-alt"></i>
-    </a>
+                <div class="header-center">
+                    {#if chapters.length > 0}
+                        <select bind:value={currentChapterIndex} class="chapter-selector-dropdown">
+                            {#each chapters as ch, idx}
+                                <option value={idx}>{ch.title || `Chương ${ch.chapter_number}`}</option>
+                            {/each}
+                        </select>
+                    {/if}
+                </div>
 
-    <button
-        onclick={toggleBookmark}
-        class="floating-btn bookmark"
-        class:active={isBookmarked}
-        title={isBookmarked ? "Xóa khỏi thư viện" : "Thêm vào thư viện"}
-    >
-        <i class="bx {isBookmarked ? 'bxs-heart' : 'bx-heart'}"></i>
-    </button>
+                <div class="header-right">
+                    <button class="control-toggle-btn" class:active={isBookmarked} onclick={toggleBookmark}>
+                        <i class="bx {isBookmarked ? 'bxs-heart' : 'bx-heart'}"></i>
+                    </button>
+                    <select bind:value={viewMode} class="view-mode-selector">
+                        <option value="scroll">Cuộn dọc</option>
+                        <option value="page">Từng trang</option>
+                    </select>
+                    <select bind:value={comicWidth} class="width-selector">
+                        <option value="narrow">Hẹp</option>
+                        <option value="medium">Vừa</option>
+                        <option value="wide">Rộng</option>
+                        <option value="full">Toàn màn hình</option>
+                    </select>
+                </div>
+            </header>
 
-    <div class="workspace">
-        <div class="flipbook-viewport" class:ready={isLoaded}>
-            <div bind:this={flipbookElement} class="flipbook">
-                {#each paginatedContent as page}
-                    <div class="page {page.type === 'hard' ? 'hard' : ''}">
-                        {#if page.type === "hard"}
-                            <div class="hard-content">
-                                {#if page.title}
-                                    <div class="book-cover-design">
-                                        {#if book?.cover_url && page.title !== "Hết"}
-                                            <img
-                                                src={book.cover_url}
-                                                alt="Cover"
-                                                class="cover-image-bg"
-                                            />
+            <main class="comic-content-area width-{comicWidth} mode-{viewMode}">
+                {#if comicImages.length > 0}
+                    {#if viewMode === "scroll"}
+                        <div class="scroll-comic-container">
+                            {#each comicImages as imgUrl, idx}
+                                <div class="comic-page-wrapper">
+                                    <img src={imgUrl} alt="Trang {idx + 1}" loading="lazy" class="comic-single-image" />
+                                </div>
+                            {/each}
+                        </div>
+                    {:else}
+                        <div class="page-comic-container">
+                            <button class="page-nav-overlay-btn prev" onclick={prevPage}>
+                                <i class="bx bx-chevron-left"></i>
+                            </button>
+                            <div class="single-image-viewport">
+                                <img src={comicImages[currentPageIndex]} alt="Trang {currentPageIndex + 1}" class="comic-single-image" />
+                            </div>
+                            <button class="page-nav-overlay-btn next" onclick={nextPage}>
+                                <i class="bx bx-chevron-right"></i>
+                            </button>
+                        </div>
+                        <div class="page-comic-counter">
+                            Trang {currentPageIndex + 1} / {comicImages.length}
+                        </div>
+                    {/if}
+                {:else}
+                    <div class="no-images-fallback">
+                        <p>Chương này không có dữ liệu hình ảnh hoặc không thể hiển thị.</p>
+                        <div class="raw-content-box">
+                            {@html currentChapter?.content}
+                        </div>
+                    </div>
+                {/if}
+            </main>
+
+            <footer class="comic-navigation-footer">
+                <button class="nav-ch-btn" disabled={currentChapterIndex === 0} onclick={prevChapter}>
+                    <i class="bx bx-left-arrow-alt"></i> Chương trước
+                </button>
+                <span class="nav-ch-indicator">
+                    Chương {currentChapterIndex + 1} / {chapters.length}
+                </span>
+                <button class="nav-ch-btn" disabled={currentChapterIndex === chapters.length - 1} onclick={nextChapter}>
+                    Chương sau <i class="bx bx-right-arrow-alt"></i>
+                </button>
+            </footer>
+        </div>
+    {:else}
+        <div bind:this={measureElement} class="measure-layer" style="--fz: {fontSize}px; --lh: {lineHeight};"></div>
+
+        <div class="reader-container">
+            <a href="/library" class="floating-btn back" title="Quay lại">
+                <i class="bx bx-left-arrow-alt"></i>
+            </a>
+
+            <button
+                onclick={toggleBookmark}
+                class="floating-btn bookmark"
+                class:active={isBookmarked}
+                title={isBookmarked ? "Xóa khỏi thư viện" : "Thêm vào thư viện"}
+            >
+                <i class="bx {isBookmarked ? 'bxs-heart' : 'bx-heart'}"></i>
+            </button>
+
+            <div class="workspace">
+                <div class="flipbook-viewport" class:ready={isLoaded}>
+                    <div bind:this={flipbookElement} class="flipbook">
+                        {#each paginatedContent as page}
+                            <div class="page {page.type === 'hard' ? 'hard' : ''}">
+                                {#if page.type === "hard"}
+                                    <div class="hard-content">
+                                        {#if page.title}
+                                            <div class="book-cover-design">
+                                                {#if book?.cover_url && page.title !== "Hết"}
+                                                    <img
+                                                        src={book.cover_url}
+                                                        alt="Cover"
+                                                        class="cover-image-bg"
+                                                    />
+                                                {/if}
+                                                <h1>{page.title}</h1>
+                                                <h3>{page.sub}</h3>
+                                                <div class="ornament">❧</div>
+                                            </div>
                                         {/if}
-                                        <h1>{page.title}</h1>
-                                        <h3>{page.sub}</h3>
-                                        <div class="ornament">❧</div>
+                                    </div>
+                                {:else}
+                                    <div class="page-inner">
+                                        <article
+                                            class="content-body"
+                                            style="--fz: {fontSize}px; --lh: {lineHeight};"
+                                        >
+                                            {#if page.title}
+                                                <h2 class="chapter-header">
+                                                    {page.title}
+                                                </h2>
+                                            {/if}
+                                            <div class="text-content">
+                                                {@html page.content}
+                                            </div>
+                                        </article>
+                                        <div class="page-number">
+                                            - {page.pageNum} -
+                                        </div>
                                     </div>
                                 {/if}
                             </div>
-                        {:else}
-                            <div class="page-inner">
-                                <article
-                                    class="content-body"
-                                    style="--fz: {fontSize}px; --lh: {lineHeight};"
-                                >
-                                    {#if page.title}
-                                        <h2 class="chapter-header">
-                                            {page.title}
-                                        </h2>
-                                    {/if}
-                                    <div class="text-content">
-                                        {@html page.content}
-                                    </div>
-                                </article>
-                                <div class="page-number">
-                                    - {page.pageNum} -
-                                </div>
-                            </div>
-                        {/if}
+                        {/each}
                     </div>
-                {/each}
+                </div>
+
+                {#if !isLoaded}
+                    <div class="loading-overlay">
+                        <div class="loader"></div>
+                        <p>Đang dàn trang sách...</p>
+                    </div>
+                {/if}
             </div>
         </div>
-
-        {#if !isLoaded}
-            <div class="loading-overlay">
-                <div class="loader"></div>
-                <p>Đang dàn trang sách...</p>
-            </div>
-        {/if}
-    </div>
-</div>
+    {/if}
+{/if}
 
 <style>
+    .loader-cover {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+        width: 100vw;
+        background: #0f0e0c;
+    }
+
+    .spinner {
+        width: 40px;
+        height: 40px;
+        border: 3px solid rgba(255,255,255,0.05);
+        border-top-color: #e15b5b;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+    }
+
+    .comic-reader-viewport {
+        min-height: 100vh;
+        background: #080808;
+        color: #e2e8f0;
+        display: flex;
+        flex-direction: column;
+        font-family: 'Space Grotesk', sans-serif;
+    }
+
+    .comic-header-bar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 64px;
+        background: rgba(14, 14, 14, 0.95);
+        backdrop-filter: blur(12px);
+        border-bottom: 1px solid #1a1a1a;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 20px;
+        z-index: 1000;
+    }
+
+    .header-left {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+    }
+
+    .comic-back-link {
+        font-size: 24px;
+        color: #a0aec0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        transition: background 0.2s, color 0.2s;
+    }
+
+    .comic-back-link:hover {
+        background: #1a1a1a;
+        color: #ffffff;
+    }
+
+    .comic-title-meta h1 {
+        font-size: 15px;
+        font-weight: 700;
+        color: #ffffff;
+        margin: 0;
+        line-height: 1.2;
+    }
+
+    .comic-title-meta p {
+        font-size: 11px;
+        color: #718096;
+        margin: 0;
+    }
+
+    .chapter-selector-dropdown {
+        background: #1a1a1a;
+        color: #ffffff;
+        border: 1px solid #2d3748;
+        padding: 8px 16px;
+        border-radius: 6px;
+        font-size: 14px;
+        outline: none;
+        cursor: pointer;
+    }
+
+    .header-right {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .control-toggle-btn {
+        width: 38px;
+        height: 38px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        background: #1a1a1a;
+        border: 1px solid #2d3748;
+        color: #a0aec0;
+        font-size: 18px;
+        transition: all 0.2s;
+    }
+
+    .control-toggle-btn:hover {
+        background: #2d3748;
+        color: #ffffff;
+    }
+
+    .control-toggle-btn.active {
+        background: #e15b5b;
+        border-color: #e15b5b;
+        color: #ffffff;
+    }
+
+    .view-mode-selector, .width-selector {
+        background: #1a1a1a;
+        color: #ffffff;
+        border: 1px solid #2d3748;
+        padding: 6px 12px;
+        border-radius: 6px;
+        font-size: 13px;
+        outline: none;
+        cursor: pointer;
+    }
+
+    .comic-content-area {
+        margin: 84px auto 80px;
+        flex: 1;
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        box-sizing: border-box;
+        padding: 0 16px;
+    }
+
+    .width-narrow { max-width: 680px; }
+    .width-medium { max-width: 900px; }
+    .width-wide { max-width: 1200px; }
+    .width-full { max-width: 100%; padding: 0; }
+
+    .scroll-comic-container {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .comic-page-wrapper {
+        width: 100%;
+        display: flex;
+        justify-content: center;
+        margin-bottom: 2px;
+        background: #000000;
+    }
+
+    .comic-single-image {
+        max-width: 100%;
+        height: auto;
+        display: block;
+    }
+
+    .page-comic-container {
+        position: relative;
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 60vh;
+        background: #000000;
+        border-radius: 8px;
+        overflow: hidden;
+    }
+
+    .single-image-viewport {
+        max-width: 100%;
+        display: flex;
+        justify-content: center;
+    }
+
+    .page-nav-overlay-btn {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        width: 15%;
+        background: rgba(0, 0, 0, 0);
+        color: rgba(255, 255, 255, 0.15);
+        font-size: 48px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: none;
+        cursor: pointer;
+        transition: background 0.2s, color 0.2s;
+        z-index: 10;
+    }
+
+    .page-nav-overlay-btn:hover {
+        background: rgba(0, 0, 0, 0.4);
+        color: rgba(255, 255, 255, 0.8);
+    }
+
+    .page-nav-overlay-btn.prev { left: 0; }
+    .page-nav-overlay-btn.next { right: 0; }
+
+    .page-comic-counter {
+        margin-top: 16px;
+        font-size: 14px;
+        color: #718096;
+    }
+
+    .no-images-fallback {
+        text-align: center;
+        padding: 60px 20px;
+        color: #a0aec0;
+    }
+
+    .raw-content-box {
+        margin-top: 20px;
+        text-align: left;
+        background: #111111;
+        padding: 24px;
+        border-radius: 8px;
+        max-width: 800px;
+        line-height: 1.8;
+        font-family: initial;
+    }
+
+    .comic-navigation-footer {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 64px;
+        background: rgba(14, 14, 14, 0.95);
+        backdrop-filter: blur(12px);
+        border-top: 1px solid #1a1a1a;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 40px;
+        z-index: 1000;
+    }
+
+    .nav-ch-btn {
+        background: #1a1a1a;
+        color: #ffffff;
+        border: 1px solid #2d3748;
+        padding: 8px 20px;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .nav-ch-btn:hover:not(:disabled) {
+        background: #2d3748;
+    }
+
+    .nav-ch-btn:disabled {
+        opacity: 0.35;
+        cursor: not-allowed;
+    }
+
+    .nav-ch-indicator {
+        font-size: 14px;
+        color: #a0aec0;
+    }
+
     .reader-container {
         display: flex;
         height: 100vh;
@@ -409,7 +852,6 @@
         width: 48px;
         height: 48px;
         background: var(--bone, #f7f1de);
-        border: 1px solid var(--line, rgba(21, 20, 15, 0.16));
         border-radius: 50%;
         display: flex;
         align-items: center;
@@ -432,7 +874,6 @@
         border: 1px solid rgba(0, 0, 0, 0.08);
         color: #475569;
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-        transition: all 0.3s cubic-bezier(0.19, 1, 0.22, 1);
     }
     
     .floating-btn.back:hover {
@@ -440,7 +881,6 @@
         border-color: #cbd5e1;
         color: #1e293b;
         transform: translateY(-2px) scale(1.05);
-        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
     }
 
     .floating-btn.bookmark {
@@ -451,27 +891,17 @@
         border: 1px solid rgba(0, 0, 0, 0.08);
         color: #ef4444;
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-        transition: all 0.3s cubic-bezier(0.19, 1, 0.22, 1);
     }
     
     .floating-btn.bookmark:hover {
         background: #fef2f2;
         border-color: #fca5a5;
-        color: #ef4444;
         transform: translateY(-2px) scale(1.05);
-        box-shadow: 0 6px 16px rgba(239, 68, 68, 0.15);
     }
 
     .floating-btn.bookmark.active {
         background: #ef4444;
         border-color: #ef4444;
-        color: #ffffff;
-        box-shadow: 0 6px 16px rgba(239, 68, 68, 0.3);
-    }
-    
-    .floating-btn.bookmark.active:hover {
-        background: #dc2626;
-        border-color: #dc2626;
         color: #ffffff;
     }
 
@@ -574,28 +1004,6 @@
         position: relative;
     }
 
-    .flipbook .page:nth-child(odd) .page-inner::after {
-        content: '';
-        position: absolute;
-        top: 0;
-        right: 0;
-        bottom: 0;
-        width: 30px;
-        background: linear-gradient(to right, transparent, rgba(21, 20, 15, 0.05));
-        pointer-events: none;
-    }
-
-    .flipbook .page:nth-child(even) .page-inner::after {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        bottom: 0;
-        width: 30px;
-        background: linear-gradient(to left, transparent, rgba(21, 20, 15, 0.05));
-        pointer-events: none;
-    }
-
     .chapter-header {
         font-family: 'Space Grotesk', sans-serif;
         font-weight: 700;
@@ -617,19 +1025,6 @@
     :global(.text-content p) {
         margin-bottom: 1em;
         text-indent: 1.5em;
-    }
-
-    .measure-layer :global(p) {
-        margin-bottom: 1em;
-        text-indent: 1.5em;
-    }
-
-    :global(.text-content img) {
-        max-width: 100%;
-        height: auto;
-        display: block;
-        margin: 10px auto;
-        border-radius: 4px;
     }
 
     .page-number {
@@ -665,6 +1060,30 @@
     @keyframes spin {
         to {
             transform: rotate(360deg);
+        }
+    }
+
+    @media (max-width: 768px) {
+        .comic-header-bar {
+            padding: 0 10px;
+            gap: 6px;
+        }
+        .comic-title-meta {
+            display: none;
+        }
+        .width-selector {
+            display: none;
+        }
+        .comic-navigation-footer {
+            padding: 0 16px;
+        }
+        .floating-btn.back {
+            left: 16px;
+            top: 16px;
+        }
+        .floating-btn.bookmark {
+            right: 16px;
+            top: 16px;
         }
     }
 </style>

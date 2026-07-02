@@ -6,13 +6,15 @@
     <div class="page-loader" class:fade-out={!visible}>
         <div class="loader-content">
             <div class="loader-logo">
-                <span class="logo-text">VHDP</span>
-                <span class="logo-dot"></span>
+                <span class="logo-text font-serif font-black text-3xl text-[#111111]">VHDP</span>
+                <span class="logo-dot w-2 h-2 bg-[#CC0000] inline-block"></span>
             </div>
-            <div class="loader-bar-track">
-                <div class="loader-bar-fill"></div>
+            <div class="loader-bar-track w-44 h-[2px] bg-neutral-200 overflow-hidden mt-4">
+                <div class="loader-bar-fill h-full w-[30%] bg-[#111111]"></div>
             </div>
-            <p class="loader-label">Đang tải…</p>
+            <p class="loader-label font-mono text-[10px] uppercase tracking-[0.2em] text-neutral-500 mt-3">
+                Đang tải…
+            </p>
         </div>
     </div>
 {/if}
@@ -25,7 +27,7 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        background: var(--bg-color, #fff);
+        background: var(--bg-color);
         transition: opacity 0.35s ease, visibility 0.35s ease;
     }
 
@@ -45,23 +47,10 @@
     .loader-logo {
         display: flex;
         align-items: baseline;
-        gap: 4px;
-    }
-
-    .logo-text {
-        font-family: "Space Grotesk", sans-serif;
-        font-weight: 900;
-        font-size: 28px;
-        color: var(--ink, #1a1515);
-        letter-spacing: -0.02em;
+        gap: 6px;
     }
 
     .logo-dot {
-        width: 10px;
-        height: 10px;
-        border-radius: 50%;
-        background: var(--coral, #e15b5b);
-        display: inline-block;
         animation: pulse-dot 1s ease-in-out infinite;
     }
 
@@ -70,19 +59,7 @@
         50% { transform: scale(1.4); opacity: 0.6; }
     }
 
-    .loader-bar-track {
-        width: 180px;
-        height: 4px;
-        border-radius: 999px;
-        background: var(--line, rgba(0,0,0,0.1));
-        overflow: hidden;
-    }
-
     .loader-bar-fill {
-        height: 100%;
-        width: 30%;
-        border-radius: inherit;
-        background: var(--coral, #e15b5b);
         animation: loading-slide 1.2s ease-in-out infinite;
     }
 
@@ -91,14 +68,4 @@
         50% { width: 80%; }
         100% { transform: translateX(520%); width: 30%; }
     }
-
-    .loader-label {
-        font-family: "Space Grotesk", sans-serif;
-        font-size: 11px;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.18em;
-        color: var(--ink-faint, #8a7373);
-    }
 </style>
-

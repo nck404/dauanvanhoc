@@ -1,7 +1,7 @@
 <script>
     import { onMount } from "svelte";
 
-    let { selector = ".reveal", once = true, rootMargin = "0px 0px -40px 0px" } = $props();
+    let { selector = ".reveal", once = true, rootMargin = "0px 0px -40px 0px", children } = $props();
 
     onMount(() => {
         const observer = new IntersectionObserver(
@@ -61,5 +61,5 @@
     });
 </script>
 
-<slot />
+{@render children?.()}
 

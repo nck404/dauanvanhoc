@@ -231,6 +231,31 @@ async function initDatabase(client) {
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
   `);
+
+  await client.execute(`
+    CREATE TABLE IF NOT EXISTS threads (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id TEXT NOT NULL,
+      content TEXT,
+      media_url TEXT,
+      parent_id INTEGER,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES user(id) ON DELETE CASCADE,
+      FOREIGN KEY (parent_id) REFERENCES threads(id) ON DELETE CASCADE
+    )
+  `);
+
+  await client.execute(`
+    CREATE TABLE IF NOT EXISTS thread_likes (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id TEXT NOT NULL,
+      thread_id INTEGER NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE(user_id, thread_id),
+      FOREIGN KEY (user_id) REFERENCES user(id) ON DELETE CASCADE,
+      FOREIGN KEY (thread_id) REFERENCES threads(id) ON DELETE CASCADE
+    )
+  `);
 }
 
 function handleCors(request) {
@@ -409,7 +434,7 @@ export default {
         const countRes = await client.execute({
           sql: isTruyenChu 
             ? "SELECT COUNT(*) as total FROM books WHERE type IN ('truyện chữ', 'text') OR type IS NULL OR type = ''"
-            : "SELECT COUNT(*) as total FROM books WHERE type IN ('truyện tranh', 'comic')",
+            : "SELECT COUNT(*) as total FROM books WHERE type IN ('truyện tranh', 'comic', 'manga')",
           args: []
         });
         total = countRes.rows[0].total || 0;
@@ -417,7 +442,7 @@ export default {
         const booksRes = await client.execute({
           sql: isTruyenChu
             ? "SELECT * FROM books WHERE type IN ('truyện chữ', 'text') OR type IS NULL OR type = '' ORDER BY created_at DESC LIMIT ? OFFSET ?"
-            : "SELECT * FROM books WHERE type IN ('truyện tranh', 'comic') ORDER BY created_at DESC LIMIT ? OFFSET ?",
+            : "SELECT * FROM books WHERE type IN ('truyện tranh', 'comic', 'manga') ORDER BY created_at DESC LIMIT ? OFFSET ?",
           args: [limit, offset]
         });
         booksRows = booksRes.rows;
@@ -648,11 +673,18 @@ export default {
       });
       const audiosRes = await client.execute("SELECT * FROM audios ORDER BY created_at DESC LIMIT 8");
       const videosRes = await client.execute("SELECT * FROM videos ORDER BY created_at DESC LIMIT 8");
+
+      const booksCount = await client.execute("SELECT COUNT(*) as count FROM books");
+      const audiosCount = await client.execute("SELECT COUNT(*) as count FROM audios");
+      const videosCount = await client.execute("SELECT COUNT(*) as count FROM videos");
+      const totalSaved = (booksCount.rows[0].count || 0) + (audiosCount.rows[0].count || 0) + (videosCount.rows[0].count || 0);
+
       return respondJson({
         truyenChu: truyenChuRes.rows,
         truyenTranh: truyenTranhRes.rows,
         audios: audiosRes.rows,
-        videos: videosRes.rows
+        videos: videosRes.rows,
+        totalSaved
       });
     }
 
@@ -974,6 +1006,181 @@ export default {
       });
     }
 
+    if (url.pathname === "/api/forum/upload" && request.method === "POST") {
+      if (!sessionUser) {
+        return respondJson({ error: "Unauthorized" }, 401);
+      }
+      const formData = await request.formData();
+      const fileData = formData.get("file");
+      if (!fileData) {
+        return respondJson({ error: "No file uploaded" }, 400);
+      }
+      const arrayBuffer = await fileData.arrayBuffer();
+      const mimeType = fileData.type || "application/octet-stream";
+      const filename = `forum-${sessionUser.id}-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
+      const stub = env.MY_DURABLE_OBJECT.getByName("file-store");
+      let uploadUrl = "";
+      if (env.BLOB_READ_WRITE_TOKEN) {
+        await put(filename, arrayBuffer, {
+          access: "private",
+          contentType: mimeType,
+          token: env.BLOB_READ_WRITE_TOKEN,
+          addRandomSuffix: false
+        });
+        uploadUrl = `/uploads/${filename}`;
+      } else {
+        await stub.uploadFile(filename, mimeType, arrayBuffer);
+        uploadUrl = `/uploads/${filename}`;
+      }
+      return respondJson({ success: true, url: uploadUrl });
+    }
+
+    if (url.pathname === "/api/forum/posts" && request.method === "GET") {
+      const pageNum = parseInt(url.searchParams.get("page") || "1");
+      const limitNum = parseInt(url.searchParams.get("limit") || "20");
+      const offsetNum = (pageNum - 1) * limitNum;
+      const currentUserId = sessionUser ? sessionUser.id : "";
+
+      const countRes = await client.execute({
+        sql: "SELECT COUNT(*) as total FROM threads WHERE parent_id IS NULL",
+        args: []
+      });
+      const total = countRes.rows[0].total || 0;
+
+      const postsRes = await client.execute({
+        sql: `SELECT t.id, t.user_id, t.content, t.media_url, t.parent_id, t.created_at,
+                     u.username, u.name, u.image,
+                     (SELECT COUNT(*) FROM thread_likes WHERE thread_id = t.id) as likes_count,
+                     (SELECT COUNT(*) FROM threads WHERE parent_id = t.id) as replies_count,
+                     (SELECT COUNT(*) FROM thread_likes WHERE thread_id = t.id AND user_id = ?) as is_liked
+              FROM threads t
+              JOIN user u ON t.user_id = u.id
+              WHERE t.parent_id IS NULL
+              ORDER BY t.created_at DESC
+              LIMIT ? OFFSET ?`,
+        args: [currentUserId, limitNum, offsetNum]
+      });
+
+      return respondJson({
+        posts: postsRes.rows,
+        total,
+        pages: Math.ceil(total / limitNum)
+      });
+    }
+
+    if (url.pathname === "/api/forum/posts" && request.method === "POST") {
+      if (!sessionUser) {
+        return respondJson({ error: "Unauthorized" }, 401);
+      }
+      const data = await request.json();
+      const content = data.content || "";
+      const media_url = data.media_url || null;
+      const parent_id = data.parent_id || null;
+
+      if (!content.trim() && !media_url) {
+        return respondJson({ error: "Content cannot be empty" }, 400);
+      }
+
+      const res = await client.execute({
+        sql: "INSERT INTO threads (user_id, content, media_url, parent_id) VALUES (?, ?, ?, ?)",
+        args: [sessionUser.id, content, media_url, parent_id]
+      });
+
+      return respondJson({ success: true, id: Number(res.lastInsertRowid) });
+    }
+
+    if (url.pathname.startsWith("/api/forum/posts/")) {
+      const pathParts = url.pathname.split("/");
+      const postId = parseInt(pathParts[4]);
+      if (isNaN(postId)) {
+        return respondJson({ error: "Invalid Post ID" }, 400);
+      }
+
+      if (pathParts.length === 5) {
+        if (request.method === "GET") {
+          const currentUserId = sessionUser ? sessionUser.id : "";
+          const postRes = await client.execute({
+            sql: `SELECT t.id, t.user_id, t.content, t.media_url, t.parent_id, t.created_at,
+                         u.username, u.name, u.image,
+                         (SELECT COUNT(*) FROM thread_likes WHERE thread_id = t.id) as likes_count,
+                         (SELECT COUNT(*) FROM threads WHERE parent_id = t.id) as replies_count,
+                         (SELECT COUNT(*) FROM thread_likes WHERE thread_id = t.id AND user_id = ?) as is_liked
+                  FROM threads t
+                  JOIN user u ON t.user_id = u.id
+                  WHERE t.id = ?`,
+            args: [currentUserId, postId]
+          });
+
+          if (postRes.rows.length === 0) {
+            return respondJson({ error: "Post not found" }, 404);
+          }
+
+          const repliesRes = await client.execute({
+            sql: `SELECT t.id, t.user_id, t.content, t.media_url, t.parent_id, t.created_at,
+                         u.username, u.name, u.image,
+                         (SELECT COUNT(*) FROM thread_likes WHERE thread_id = t.id) as likes_count,
+                         (SELECT COUNT(*) FROM threads WHERE parent_id = t.id) as replies_count,
+                         (SELECT COUNT(*) FROM thread_likes WHERE thread_id = t.id AND user_id = ?) as is_liked
+                  FROM threads t
+                  JOIN user u ON t.user_id = u.id
+                  WHERE t.parent_id = ?
+                  ORDER BY t.created_at ASC`,
+            args: [currentUserId, postId]
+          });
+
+          return respondJson({
+            post: postRes.rows[0],
+            replies: repliesRes.rows
+          });
+        }
+
+        if (request.method === "DELETE") {
+          if (!sessionUser) {
+            return respondJson({ error: "Unauthorized" }, 401);
+          }
+          const check = await client.execute({
+            sql: "SELECT user_id FROM threads WHERE id = ?",
+            args: [postId]
+          });
+          if (check.rows.length === 0) {
+            return respondJson({ error: "Post not found" }, 404);
+          }
+          if (check.rows[0].user_id !== sessionUser.id && sessionUser.role !== "admin") {
+            return respondJson({ error: "Forbidden" }, 403);
+          }
+          await client.execute({
+            sql: "DELETE FROM threads WHERE id = ?",
+            args: [postId]
+          });
+          return respondJson({ success: true });
+        }
+      }
+
+      if (pathParts[5] === "like" && request.method === "POST") {
+        if (!sessionUser) {
+          return respondJson({ error: "Unauthorized" }, 401);
+        }
+        const check = await client.execute({
+          sql: "SELECT 1 FROM thread_likes WHERE user_id = ? AND thread_id = ?",
+          args: [sessionUser.id, postId]
+        });
+        if (check.rows.length > 0) {
+          await client.execute({
+            sql: "DELETE FROM thread_likes WHERE user_id = ? AND thread_id = ?",
+            args: [sessionUser.id, postId]
+          });
+          return respondJson({ success: true, liked: false });
+        } else {
+          await client.execute({
+            sql: "INSERT INTO thread_likes (user_id, thread_id) VALUES (?, ?)",
+            args: [sessionUser.id, postId]
+          });
+          return respondJson({ success: true, liked: true });
+        }
+      }
+    }
+
     return new Response("Not Found", { status: 404, headers: corsHeaders });
   }
 };
+

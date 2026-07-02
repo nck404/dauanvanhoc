@@ -11,6 +11,7 @@
     let isPlaying = $state(false);
     let currentTime = $state(0);
     let duration = $state(0);
+    let playbackSpeed = $state(1);
     let progress = $derived(duration > 0 ? (currentTime / duration) * 100 : 0);
 
     function togglePlay() {
@@ -37,6 +38,25 @@
         audioEl.currentTime = percent * duration;
     }
 
+    function seekBackward() {
+        if (!audioEl) return;
+        audioEl.currentTime = Math.max(0, audioEl.currentTime - 15);
+    }
+
+    function seekForward() {
+        if (!audioEl) return;
+        audioEl.currentTime = Math.min(duration, audioEl.currentTime + 15);
+    }
+
+    function cycleSpeed() {
+        const speeds = [1, 1.25, 1.5, 2, 0.8];
+        const nextIdx = (speeds.indexOf(playbackSpeed) + 1) % speeds.length;
+        playbackSpeed = speeds[nextIdx];
+        if (audioEl) {
+            audioEl.playbackRate = playbackSpeed;
+        }
+    }
+
     async function toggleBookmark() {
         try {
             const res = await apiFetch(`/api/audios/${page.params.id}`, {
@@ -52,7 +72,6 @@
     }
 
     onMount(async () => {
-        document.body.classList.add("paper-theme");
         const audioId = page.params.id;
         try {
             const res = await apiFetch(`/api/audios/${audioId}`);
@@ -68,10 +87,8 @@
         }
         if (audioEl) {
             audioEl.volume = 0.8;
+            audioEl.playbackRate = playbackSpeed;
         }
-        return () => {
-            document.body.classList.remove("paper-theme");
-        };
     });
 
     onDestroy(() => {
@@ -82,98 +99,115 @@
 </script>
 
 <svelte:head>
-    <title>{audioData?.title ? `${audioData.title} - Dấu Ấn Văn Học` : 'Đang tải... - Dấu Ấn Văn Học'}</title>
+    <title>{audioData?.title ? `${audioData.title} - Dấu Ấn Văn Học` : 'Đang tải...'}</title>
 </svelte:head>
 
 {#if loading}
-    <div style="display: flex; align-items: center; justify-content: center; height: 100vh; font-size: 18px; font-weight: 500;">
-        Đang tải...
+    <div class="loader-container">
+        <div class="loader-spinner"></div>
     </div>
 {:else if audioData}
-
     <audio
         bind:this={audioEl}
         src={audioData.audio_url}
-        ontimeupdate={() => (currentTime = audioEl.currentTime)}
-        onloadedmetadata={() => (duration = audioEl.duration)}
+        ontimeupdate={() => {
+            if (audioEl) {
+                currentTime = audioEl.currentTime;
+            }
+        }}
+        onloadedmetadata={() => {
+            if (audioEl) {
+                duration = audioEl.duration;
+            }
+        }}
         onended={() => (isPlaying = false)}
     ></audio>
 
-    <div class="audio-container">
-        <div class="split-layout">
-            <div class="player-panel comic-card">
-                <a href="/audio" class="back-link">
-                    <i class="bx bx-left-arrow-alt"></i> Thư viện Audio
+    <div class="spotify-player-root">
+        <div class="spotify-grid">
+            <div class="player-sidebar">
+                <a href="/audio" class="back-navigation-btn">
+                    <i class="bx bx-chevron-left"></i>
+                    <span>Thư viện Audio</span>
                 </a>
 
-                <div class="record-wrapper {isPlaying ? 'playing' : ''}">
-                    <div class="record">
-                        <img
-                            src={audioData.cover_url || "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&q=80&w=400"}
-                            alt="Cover"
-                        />
-                        <div class="hole"></div>
-                    </div>
+                <div class="podcast-cover-box">
+                    <img
+                        src={audioData.cover_url || "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&q=80&w=400"}
+                        alt="Podcast Cover"
+                        class="podcast-cover-image"
+                    />
                 </div>
 
-                <div class="track-info">
-                    <h1>{audioData.title}</h1>
-                    <p class="author">{audioData.author}</p>
+                <div class="podcast-details">
+                    <h1 class="podcast-title">{audioData.title}</h1>
+                    <p class="podcast-host">{audioData.author}</p>
                 </div>
 
-                <div class="player-controls">
-                    <div
-                        class="progress-container"
-                        onclick={handleSeek}
-                        onkeydown={() => {}}
-                        role="slider"
-                        tabindex="0"
-                        aria-valuenow={progress}
-                    >
-                        <div class="progress-bar">
-                            <div
-                                class="progress-fill"
-                                style:width="{progress}%"
-                            ></div>
+                <div class="player-controls-container">
+                    <div class="timeline-row">
+                        <span class="time-label">{formatTime(currentTime)}</span>
+                        <div
+                            class="timeline-track-outer"
+                            onclick={handleSeek}
+                            onkeydown={() => {}}
+                            role="slider"
+                            tabindex="0"
+                            aria-valuenow={progress}
+                        >
+                            <div class="timeline-track-inner">
+                                <div
+                                    class="timeline-progress-fill"
+                                    style:width="{progress}%"
+                                ></div>
+                            </div>
                         </div>
+                        <span class="time-label">{formatTime(duration)}</span>
                     </div>
 
-                    <div class="time-stamp">
-                        <span>{formatTime(currentTime)}</span>
-                        <span>{formatTime(duration)}</span>
-                    </div>
+                    <div class="controls-action-row">
+                        <button class="cycle-speed-btn" onclick={cycleSpeed}>
+                            {playbackSpeed}x
+                        </button>
 
-                    <div class="buttons">
-                        <button class="btn-side"><i class="bx bx-rewind"></i></button>
-                        <button class="btn-play" onclick={togglePlay}>
+                        <button class="skip-btn" onclick={seekBackward}>
+                            <i class="bx bx-undo"></i>
+                            <span class="skip-text">15</span>
+                        </button>
+
+                        <button class="main-toggle-play-btn" onclick={togglePlay}>
                             <i class="bx {isPlaying ? 'bx-pause' : 'bx-play'}"></i>
                         </button>
-                        <button class="btn-side"><i class="bx bx-fast-forward"></i></button>
+
+                        <button class="skip-btn" onclick={seekForward}>
+                            <i class="bx bx-redo"></i>
+                            <span class="skip-text">15</span>
+                        </button>
+
+                        <button
+                            class="spotify-fav-btn"
+                            class:saved={isBookmarked}
+                            onclick={toggleBookmark}
+                        >
+                            <i class="bx {isBookmarked ? 'bxs-heart' : 'bx-heart'}"></i>
+                        </button>
                     </div>
                 </div>
 
-                <div class="action-bar">
-                    <button
-                        onclick={toggleBookmark}
-                        class="favorite-btn"
-                        class:active={isBookmarked}
-                    >
-                        <i class="bx {isBookmarked ? 'bxs-heart' : 'bx-heart'}"></i>
-                        <span>{isBookmarked ? "Đã lưu vào thư viện" : "Lưu vào thư viện"}</span>
-                    </button>
-                </div>
-
-                <div class="extra-meta">
-                    <span><i class="bx bx-headphone"></i> Lượt nghe: {audioData.views + 1}</span>
+                <div class="podcast-extra-row">
+                    <div class="listeners-badge">
+                        <i class="bx bx-headphone"></i>
+                        <span>{audioData.views + 1} lượt nghe</span>
+                    </div>
                 </div>
             </div>
 
-            <div class="lyrics-panel">
-                <div class="lyrics-header">
-                    <h2><i class="bx bx-book-reader"></i> Nội dung / Lời thoại</h2>
+            <div class="transcript-panel">
+                <div class="transcript-title-row">
+                    <h2><i class="bx bx-detail"></i> Lời thoại / Bản ghi</h2>
                 </div>
-                <div class="lyrics-content">
-                    <div class="quill-output">
+                <div class="transcript-body-scroll">
+                    <div class="quill-html-content">
                         {@html audioData.lyrics}
                     </div>
                 </div>
@@ -181,314 +215,335 @@
         </div>
     </div>
 {:else}
-    <div style="display: flex; align-items: center; justify-content: center; height: 100vh; font-size: 18px; font-weight: 500;">
-        Không tìm thấy audio
+    <div class="loader-container">
+        <p class="error-msg">Không tìm thấy Audio</p>
     </div>
 {/if}
 
 <style>
-    .audio-container {
+    :global(body) {
+        background-color: #0b0b0b !important;
+        color: #ffffff !important;
+    }
+
+    .loader-container {
+        display: flex;
+        align-items: center;
+        justify-content: center;
         height: 100vh;
         width: 100vw;
-        background: transparent;
-        overflow: hidden;
-        display: flex;
-        font-family: 'Space Grotesk', sans-serif;
+        background: #0b0b0b;
     }
 
-    .split-layout {
-        display: flex;
-        width: 100%;
-        height: 100%;
-        margin: 0 auto;
-        max-width: 1600px;
-        background: transparent;
-    }
-
-    .player-panel {
-        width: 460px;
-        background: var(--bone);
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        padding: 60px 40px;
-        position: relative;
-    }
-
-    .back-link {
-        position: absolute;
-        top: 30px;
-        left: 40px;
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        font-family: 'Space Grotesk', sans-serif;
-        font-weight: 700;
-        color: var(--ink-faint);
-        text-transform: uppercase;
-        font-size: 11px;
-        letter-spacing: 0.15em;
-        text-decoration: none;
-        transition: color 0.2s;
-    }
-
-    .back-link:hover {
-        color: var(--coral);
-    }
-
-    .record-wrapper {
-        margin-top: 50px;
-        width: 250px;
-        height: 250px;
+    .loader-spinner {
+        width: 45px;
+        height: 45px;
+        border: 3px solid #1c1c1c;
+        border-top-color: #1db954;
         border-radius: 50%;
-        background: #1c1a17;
-        box-shadow:
-            0 25px 50px -15px rgba(21, 20, 15, 0.3),
-            inset 0 0 25px rgba(0, 0, 0, 0.8),
-            0 0 0 8px var(--line-faint);
-        padding: 10px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-    .record {
-        width: 100%;
-        height: 100%;
-        border-radius: 50%;
-        overflow: hidden;
-        position: relative;
-        background: #111;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-    .record img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        opacity: 0.85;
-    }
-
-    .record .hole {
-        position: absolute;
-        width: 38px;
-        height: 38px;
-        background: var(--bg-color);
-        border-radius: 50%;
-        border: 4px solid #1c1a17;
-        box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.6);
-    }
-
-    .playing .record {
-        animation: spin 12s linear infinite;
+        animation: spin 1s linear infinite;
     }
 
     @keyframes spin {
-        from { transform: rotate(0deg); }
         to { transform: rotate(360deg); }
     }
 
-    .track-info {
-        text-align: center;
-        margin-top: 35px;
-        margin-bottom: 25px;
-        width: 100%;
-    }
-
-    .track-info h1 {
+    .error-msg {
         font-family: 'Space Grotesk', sans-serif;
-        font-weight: 800;
-        font-size: 22px;
-        color: var(--ink);
-        margin-bottom: 8px;
-        line-height: 1.3;
+        font-size: 16px;
+        color: #b3b3b3;
     }
 
-    .track-info .author {
-        font-family: 'Playfair Display', serif;
-        font-style: italic;
-        font-size: 15px;
-        color: var(--coral);
+    .spotify-player-root {
+        height: 100vh;
+        width: 100vw;
+        background: linear-gradient(180deg, #181818 0%, #0c0c0c 100%);
+        overflow: hidden;
+        font-family: 'Space Grotesk', sans-serif;
+        display: flex;
+        padding-top: 10px;
+    }
+
+    .spotify-grid {
+        display: grid;
+        grid-template-columns: 460px 1fr;
+        width: 100%;
+        height: 100%;
+        max-width: 1600px;
+        margin: 0 auto;
+    }
+
+    .player-sidebar {
+        background: #121212;
+        border-right: 1px solid #282828;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 40px;
+        box-sizing: border-box;
+    }
+
+    .back-navigation-btn {
+        align-self: flex-start;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        font-weight: 700;
+        color: #b3b3b3;
+        text-transform: uppercase;
+        font-size: 11px;
+        letter-spacing: 0.12em;
+        text-decoration: none;
+        transition: color 0.2s;
+        margin-bottom: 30px;
+    }
+
+    .back-navigation-btn:hover {
+        color: #ffffff;
+    }
+
+    .podcast-cover-box {
+        width: 280px;
+        height: 280px;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 16px 40px rgba(0,0,0,0.7);
+        margin-bottom: 30px;
+    }
+
+    .podcast-cover-image {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .podcast-details {
+        text-align: center;
+        width: 100%;
+        margin-bottom: 30px;
+    }
+
+    .podcast-title {
+        font-size: 24px;
+        font-weight: 800;
+        color: #ffffff;
+        margin-bottom: 8px;
+        line-height: 1.2;
+    }
+
+    .podcast-host {
+        font-size: 14px;
+        color: #b3b3b3;
         font-weight: 500;
     }
 
-    .player-controls {
+    .player-controls-container {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+        margin-bottom: 30px;
+    }
+
+    .timeline-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
         width: 100%;
     }
 
-    .progress-container {
-        width: 100%;
-        height: 20px;
+    .time-label {
+        font-family: monospace;
+        font-size: 11px;
+        color: #a7a7a7;
+        min-width: 32px;
+    }
+
+    .timeline-track-outer {
+        flex: 1;
+        height: 16px;
         display: flex;
         align-items: center;
         cursor: pointer;
     }
 
-    .progress-bar {
+    .timeline-track-inner {
         width: 100%;
         height: 4px;
-        background: var(--line);
-        border-radius: 99px;
+        background: #4f4f4f;
+        border-radius: 2px;
         overflow: hidden;
+        position: relative;
     }
 
-    .progress-fill {
+    .timeline-progress-fill {
         height: 100%;
-        background: var(--coral);
+        background: #1db954;
+        border-radius: 2px;
         transition: width 0.1s linear;
     }
 
-    .time-stamp {
-        display: flex;
-        justify-content: space-between;
-        font-family: 'JetBrains Mono', monospace;
-        font-size: 11px;
-        color: var(--ink-mute);
-        margin-top: 6px;
-        margin-bottom: 24px;
+    .timeline-track-outer:hover .timeline-progress-fill {
+        background: #1ed760;
     }
 
-    .buttons {
+    .controls-action-row {
         display: flex;
         align-items: center;
         justify-content: center;
-        gap: 28px;
+        gap: 24px;
     }
 
-    .btn-side {
-        font-size: 24px;
-        color: var(--ink-faint);
-        background: none;
-        border: none;
-        cursor: pointer;
-        transition: color 0.2s;
+    .cycle-speed-btn {
+        font-size: 12px;
+        font-weight: 700;
+        color: #b3b3b3;
+        border: 1px solid #b3b3b3;
+        border-radius: 4px;
+        padding: 2px 6px;
+        min-width: 44px;
+        text-align: center;
     }
 
-    .btn-side:hover {
-        color: var(--ink);
+    .cycle-speed-btn:hover {
+        color: #ffffff;
+        border-color: #ffffff;
     }
 
-    .btn-play {
+    .skip-btn {
+        font-size: 22px;
+        color: #b3b3b3;
+        display: flex;
+        align-items: center;
+        position: relative;
+    }
+
+    .skip-btn:hover {
+        color: #ffffff;
+    }
+
+    .skip-text {
+        position: absolute;
+        font-size: 8px;
+        font-family: sans-serif;
+        font-weight: 700;
+        top: 55%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+    }
+
+    .main-toggle-play-btn {
         width: 56px;
         height: 56px;
         border-radius: 50%;
-        background: var(--coral);
-        color: white;
+        background: #ffffff;
+        color: #000000;
         font-size: 28px;
         display: flex;
         align-items: center;
         justify-content: center;
-        box-shadow: 0 10px 25px -10px rgba(225, 91, 91, 0.4);
-        border: none;
-        cursor: pointer;
-        transition: transform 0.2s, box-shadow 0.2s;
+        transition: transform 0.2s;
     }
 
-    .btn-play:hover {
-        transform: scale(1.05);
-        box-shadow: 0 12px 30px -8px rgba(225, 91, 91, 0.5);
+    .main-toggle-play-btn:hover {
+        transform: scale(1.06);
     }
 
-    .action-bar {
-        margin-top: 35px;
-        width: 100%;
+    .spotify-fav-btn {
+        font-size: 22px;
+        color: #b3b3b3;
     }
 
-    .favorite-btn {
-        width: 100%;
-        padding: 12px;
-        border-radius: 30px;
-        border: 1px solid var(--line);
-        background: var(--bone);
+    .spotify-fav-btn:hover {
+        color: #ffffff;
+    }
+
+    .spotify-fav-btn.saved {
+        color: #1db954;
+    }
+
+    .podcast-extra-row {
+        margin-top: auto;
+    }
+
+    .listeners-badge {
         display: flex;
         align-items: center;
-        justify-content: center;
-        gap: 8px;
-        font-family: 'Space Grotesk', sans-serif;
-        font-weight: 700;
-        font-size: 13px;
-        color: var(--ink-soft);
-        cursor: pointer;
-        transition: all 0.2s;
+        gap: 6px;
+        font-size: 12px;
+        color: #b3b3b3;
+        background: #282828;
+        padding: 6px 14px;
+        border-radius: 20px;
     }
 
-    .favorite-btn i {
-        font-size: 18px;
-    }
-
-    .favorite-btn.active {
-        background: var(--coral);
-        border-color: var(--coral);
-        color: white;
-    }
-
-    .favorite-btn:hover {
-        border-color: var(--coral);
-        color: var(--coral);
-    }
-
-    .favorite-btn.active:hover {
-        color: white;
-        background: var(--coral);
-        opacity: 0.9;
-    }
-
-    .extra-meta {
-        margin-top: auto;
-        font-family: 'JetBrains Mono', monospace;
-        font-size: 11px;
-        color: var(--ink-faint);
-    }
-
-    .lyrics-panel {
-        flex: 1;
-        height: 100%;
+    .transcript-panel {
         display: flex;
         flex-direction: column;
-        background: transparent;
+        background: #181818;
+        height: 100%;
+        overflow: hidden;
     }
 
-    .lyrics-header {
-        padding: 40px 60px;
-        border-bottom: 1px solid var(--line-faint);
+    .transcript-title-row {
+        padding: 40px 60px 20px;
+        border-bottom: 1px solid #282828;
     }
 
-    .lyrics-header h2 {
-        font-family: 'Space Grotesk', sans-serif;
-        font-weight: 700;
-        font-size: 18px;
-        color: var(--ink);
+    .transcript-title-row h2 {
+        font-size: 20px;
+        font-weight: 800;
+        color: #ffffff;
         display: flex;
         align-items: center;
         gap: 10px;
     }
 
-    .lyrics-content {
+    .transcript-body-scroll {
         flex: 1;
         overflow-y: auto;
-        padding: 60px;
+        padding: 40px 60px 80px;
     }
 
-    .lyrics-content::-webkit-scrollbar {
-        width: 6px;
-    }
-    .lyrics-content::-webkit-scrollbar-thumb {
-        background: var(--line);
-        border-radius: 3px;
+    .transcript-body-scroll::-webkit-scrollbar {
+        width: 8px;
     }
 
-    .quill-output {
-        font-family: 'Playfair Display', serif;
-        font-size: 18px;
+    .transcript-body-scroll::-webkit-scrollbar-thumb {
+        background: #3e3e3e;
+        border-radius: 4px;
+    }
+
+    .quill-html-content {
+        font-size: 16px;
         line-height: 1.8;
-        color: var(--ink-soft);
-        max-width: 750px;
-        text-align: justify;
+        color: #b3b3b3;
+        max-width: 800px;
     }
 
-    :global(.quill-output p) {
+    :global(.quill-html-content p) {
         margin-bottom: 1.5em;
+    }
+
+    @media (max-width: 1024px) {
+        .spotify-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .player-sidebar {
+            border-right: none;
+            border-bottom: 1px solid #282828;
+            height: auto;
+        }
+
+        .transcript-panel {
+            height: auto;
+            overflow: visible;
+        }
+
+        .transcript-body-scroll {
+            overflow: visible;
+            height: auto;
+        }
     }
 </style>
