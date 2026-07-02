@@ -68,6 +68,9 @@
                 <a href="/video" class="nav-link font-mono {page.url.pathname.startsWith('/video') ? 'active' : ''}">
                     Video
                 </a>
+                <a href="/map" class="nav-link font-mono {page.url.pathname.startsWith('/map') ? 'active' : ''}">
+                    Bản đồ
+                </a>
                 <a href="/forum" class="nav-link font-mono {page.url.pathname.startsWith('/forum') ? 'active' : ''}">
                     Diễn đàn
                 </a>

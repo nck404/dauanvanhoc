@@ -103,18 +103,22 @@
                         <div class="edition-toc">
                             <div class="toc-label">Mục lục</div>
                             <div class="toc-list">
-                                <div class="toc-item">
+                                <a href="/truyen-chu" class="toc-item">
                                     <span class="toc-num">I.</span>
                                     <span class="toc-text">Truyện Chữ</span>
-                                </div>
-                                <div class="toc-item">
+                                </a>
+                                <a href="/truyen-tranh" class="toc-item">
                                     <span class="toc-num">II.</span>
                                     <span class="toc-text">Truyện Tranh</span>
-                                </div>
+                                </a>
                                 <div class="toc-item">
                                     <span class="toc-num">III.</span>
                                     <span class="toc-text">Audio & Video</span>
                                 </div>
+                                <a href="/map" class="toc-item">
+                                    <span class="toc-num">IV.</span>
+                                    <span class="toc-text">Bản đồ Văn học</span>
+                                </a>
                             </div>
                         </div>
                     </div>
