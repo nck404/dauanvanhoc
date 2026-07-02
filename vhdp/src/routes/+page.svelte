@@ -2,6 +2,7 @@
     import { onMount } from "svelte";
     import BookCard from "$lib/BookCard.svelte";
     import SkeletonCard from "$lib/components/SkeletonCard.svelte";
+    import LamDongMap from "$lib/components/LamDongMap.svelte";
     import { fade, slide } from "svelte/transition";
     import { apiFetch } from "$lib/api.js";
 
@@ -1072,5 +1073,87 @@
         font-family: 'Playfair Display', serif;
         font-size: 14px;
         color: var(--newsprint-neutral-500);
+    }
+
+    /* Map Intro Section Styles */
+    .map-intro-section {
+        margin-bottom: 80px;
+        padding-top: 40px;
+        border-top: 4px solid var(--newsprint-ink);
+    }
+
+    .lamdong-intro {
+        display: grid;
+        grid-template-columns: 3fr 2fr;
+        gap: 48px;
+        margin-top: 32px;
+        margin-bottom: 48px;
+        padding: 32px;
+        background: var(--newsprint-surface);
+        border: 2px solid var(--newsprint-ink);
+    }
+
+    @media (max-width: 900px) {
+        .lamdong-intro {
+            grid-template-columns: 1fr;
+            gap: 32px;
+        }
+    }
+
+    .intro-heading {
+        font-size: 28px;
+        font-weight: 700;
+        color: var(--newsprint-ink);
+        margin-bottom: 16px;
+    }
+
+    .intro-text {
+        font-family: 'Lora', serif;
+        font-size: 16px;
+        line-height: 1.6;
+        color: var(--newsprint-neutral-700);
+        margin-bottom: 16px;
+        text-align: justify;
+    }
+
+    .intro-text:last-child {
+        margin-bottom: 0;
+    }
+
+    .intro-stat-boxes {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+    }
+
+    .stat-box {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        padding: 24px;
+        background: var(--newsprint-white);
+        border: 1px dashed var(--newsprint-ink);
+        text-align: center;
+    }
+
+    .stat-box:last-child {
+        grid-column: 1 / -1;
+    }
+
+    .stat-number {
+        font-family: 'PexelGrotesk', sans-serif;
+        font-size: 42px;
+        color: var(--newsprint-red);
+        line-height: 1;
+        margin-bottom: 8px;
+    }
+
+    .stat-label {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        color: var(--newsprint-ink);
     }
 </style>
