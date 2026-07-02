@@ -128,6 +128,44 @@
         </div>
     </header>
 
+    <section class="map-intro-section">
+        <div class="section-header section-header--center">
+            <div class="section-ornament">&#x2727; &#x2727; &#x2727; &#x2727;</div>
+            <div class="section-tag">Địa lý văn học</div>
+            <h2 class="section-title">
+                Khám phá <em class="section-accent">Lâm Đồng</em>
+            </h2>
+        </div>
+
+        <div class="lamdong-intro">
+            <div class="intro-content">
+                <h3 class="intro-heading">Vùng đất của sử thi và huyền thoại</h3>
+                <p class="intro-text">
+                    Lâm Đồng, nằm trên cao nguyên Lang Biang hùng vĩ, không chỉ nổi tiếng với cảnh quan thiên nhiên mộng mơ mà còn là cái nôi của một kho tàng văn học dân gian vô cùng phong phú. Đây là nơi sinh sống lâu đời của các dân tộc bản địa như K'Ho, Mạ, Chu Ru... với những bản trường ca, sử thi, truyện cổ tích và truyền thuyết gắn liền với từng ngọn núi, dòng sông.
+                </p>
+                <p class="intro-text">
+                    Thông qua bản đồ tuyến điểm văn học, độc giả có thể dễ dàng định vị và tiếp cận các tác phẩm văn học, nghệ thuật đặc trưng của từng địa phương thuộc tỉnh Lâm Đồng, từ thành phố Đà Lạt thơ mộng đến các huyện vùng sâu vùng xa chứa đựng nhiều huyền thoại kỳ bí.
+                </p>
+            </div>
+            <div class="intro-stat-boxes">
+                <div class="stat-box">
+                    <span class="stat-number">12</span>
+                    <span class="stat-label">Huyện & Thị xã</span>
+                </div>
+                <div class="stat-box">
+                    <span class="stat-number">100+</span>
+                    <span class="stat-label">Tác phẩm số hóa</span>
+                </div>
+                <div class="stat-box">
+                    <span class="stat-number">3+</span>
+                    <span class="stat-label">Dân tộc bản địa</span>
+                </div>
+            </div>
+        </div>
+
+        <LamDongMap />
+    </section>
+
     <!-- Featured Works Section -->
     <section class="featured-section">
         <div class="section-header section-header--center">
