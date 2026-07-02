@@ -185,6 +185,7 @@
         max-width: 620px;
         margin: 0 auto;
         padding: 24px 16px;
+        margin-top: 70px;
     }
 
     .header-bar {

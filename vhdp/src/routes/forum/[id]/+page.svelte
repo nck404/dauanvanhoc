@@ -20,6 +20,7 @@
     let selectedImageUrl = $state("");
     let replyError = $state("");
     let showPreview = $state(false);
+    let isSubmitting = $state(false);
 
     async function loadPostDetail() {
         if (isNaN(postId)) {
@@ -85,11 +86,13 @@
     }
 
     async function submitReply() {
+        if (isSubmitting) return;
         if (!replyContent.trim() && !selectedImageUrl) {
             replyError = "Nội dung phản hồi không được để trống";
             return;
         }
 
+        isSubmitting = true;
         try {
             const res = await apiFetch("/api/forum/posts", {
                 method: "POST",
@@ -104,7 +107,7 @@
                 replyContent = "";
                 selectedImageUrl = "";
                 replyError = "";
-                loadPostDetail();
+                await loadPostDetail();
             } else {
                 const data = await res.json();
                 replyError = data.error || "Không thể gửi phản hồi";
@@ -112,6 +115,8 @@
         } catch (err) {
             replyError = "Lỗi kết nối";
             console.error(err);
+        } finally {
+            isSubmitting = false;
         }
     }
 
@@ -379,9 +384,9 @@
                             <button 
                                 class="submit-reply-btn pixel-font" 
                                 onclick={submitReply}
-                                disabled={uploadingFile || (!replyContent.trim() && !selectedImageUrl)}
+                                disabled={isSubmitting || uploadingFile || (!replyContent.trim() && !selectedImageUrl)}
                             >
-                                Gửi
+                                {isSubmitting ? 'Đang gửi...' : 'Gửi'}
                             </button>
                         </div>
 

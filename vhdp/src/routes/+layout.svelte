@@ -6,13 +6,14 @@
     import Background from "$lib/components/Background.svelte";
     import PageLoader from "$lib/components/PageLoader.svelte";
     import ScrollReveal from "$lib/components/ScrollReveal.svelte";
+    import SearchModal from "$lib/SearchModal.svelte";
     import { beforeNavigate, afterNavigate, goto } from "$app/navigation";
     import { page } from "$app/state";
     import { userStore, loadUser, apiFetch } from "$lib/api.js";
 
     let { children } = $props();
 
-    let loading = $state(false);
+    let loading = $state(true);
     let timer = null;
     let initialized = $state(false);
     let currentUser = $state(null);
@@ -31,7 +32,7 @@
     afterNavigate(() => {
         timer = setTimeout(() => {
             loading = false;
-        }, 350);
+        }, 300);
     });
 
     onMount(async () => {
@@ -72,6 +73,7 @@
     });
 
     let isAuthPage = $derived(page.url.pathname === "/login" || page.url.pathname === "/register");
+    let isReadPage = $derived(page.url.pathname.startsWith("/read") || page.url.pathname.startsWith("/read-comic"));
 
     $effect(() => {
         if (!initialized) return;
@@ -103,11 +105,12 @@
 {#if initialized}
     <Navbar user={currentUser} activeTime={activeTimeText} totalSaved={totalSaved} />
 
-    <main class="main-content dot-grid-bg" class:auth-layout={isAuthPage}>
+    <main class="main-content dot-grid-bg" class:auth-layout={isAuthPage} class:read-layout={isReadPage}>
         <ScrollReveal>
             {@render children()}
         </ScrollReveal>
     </main>
+    <SearchModal />
 {/if}
 
 <style>
@@ -117,7 +120,8 @@
         padding-top: 80px;
         min-height: 100vh;
     }
-    .main-content.auth-layout {
+    .main-content.auth-layout,
+    .main-content.read-layout {
         padding-top: 0;
     }
 </style>

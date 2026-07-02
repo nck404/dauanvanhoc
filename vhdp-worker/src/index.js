@@ -310,6 +310,7 @@ export default {
               const headers = new Headers(corsHeaders);
               headers.set("Content-Type", blobResult.blob.contentType);
               headers.set("X-Content-Type-Options", "nosniff");
+              headers.set("Accept-Ranges", "bytes");
               return new Response(blobResult.stream, { headers });
             }
           } catch (e) {
@@ -320,8 +321,29 @@ export default {
         if (!file) {
           return new Response("Not Found", { status: 404, headers: corsHeaders });
         }
+        
         const headers = new Headers(corsHeaders);
         headers.set("Content-Type", file.mime);
+        headers.set("Accept-Ranges", "bytes");
+
+        const range = request.headers.get("Range");
+        if (range) {
+          const parts = range.replace(/bytes=/, "").split("-");
+          const start = parseInt(parts[0], 10);
+          const end = parts[1] ? parseInt(parts[1], 10) : file.data.byteLength - 1;
+          
+          if (start >= file.data.byteLength || end >= file.data.byteLength) {
+            headers.set("Content-Range", `bytes */${file.data.byteLength}`);
+            return new Response(null, { status: 416, headers });
+          }
+          
+          headers.set("Content-Range", `bytes ${start}-${end}/${file.data.byteLength}`);
+          headers.set("Content-Length", (end - start + 1).toString());
+          const slice = file.data.slice(start, end + 1);
+          return new Response(slice, { status: 206, headers });
+        }
+
+        headers.set("Content-Length", file.data.byteLength.toString());
         return new Response(file.data, { headers });
       }
 
@@ -572,6 +594,23 @@ export default {
         }
       }
 
+      if (pathParts[4] === "chapters" && request.method === "POST") {
+        if (!sessionUser || sessionUser.role !== "admin") {
+          return respondJson({ error: "Admin access required" }, 403);
+        }
+        const data = await request.json();
+        const res = await client.execute({
+          sql: "INSERT INTO chapters (book_id, chapter_number, title, content) VALUES (?, ?, ?, ?)",
+          args: [
+            bookId,
+            data.chapter_number || 1,
+            data.title || `Chương ${data.chapter_number || 1}`,
+            data.content || ""
+          ]
+        });
+        return respondJson({ success: true, chapterId: Number(res.lastInsertRowid) });
+      }
+
       if (pathParts[4] === "toggle-bookmark" && request.method === "POST") {
         if (!sessionUser) {
           return respondJson({ error: "Unauthorized" }, 401);
@@ -659,6 +698,41 @@ export default {
           average: avg,
           count: ratingsRes.rows.length
         });
+      }
+    }
+
+    if (url.pathname.startsWith("/api/chapters/")) {
+      const pathParts = url.pathname.split("/");
+      const chapterId = parseInt(pathParts[3]);
+
+      if (!isNaN(chapterId)) {
+        if (request.method === "DELETE") {
+          if (!sessionUser || sessionUser.role !== "admin") {
+            return respondJson({ error: "Admin access required" }, 403);
+          }
+          await client.execute({
+            sql: "DELETE FROM chapters WHERE id = ?",
+            args: [chapterId]
+          });
+          return respondJson({ success: true });
+        }
+
+        if (request.method === "PUT") {
+          if (!sessionUser || sessionUser.role !== "admin") {
+            return respondJson({ error: "Admin access required" }, 403);
+          }
+          const data = await request.json();
+          await client.execute({
+            sql: "UPDATE chapters SET chapter_number = ?, title = ?, content = ? WHERE id = ?",
+            args: [
+              data.chapter_number,
+              data.title,
+              data.content,
+              chapterId
+            ]
+          });
+          return respondJson({ success: true });
+        }
       }
     }
 

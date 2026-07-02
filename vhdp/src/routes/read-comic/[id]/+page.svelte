@@ -9,20 +9,78 @@
     let isBookmarked = $state(false);
     let loading = $state(true);
 
-    let flipbookElement = $state();
-    let measureElement = $state();
-    let isLoaded = $state(false);
+    let currentChapterIndex = $state(0);
+    let viewMode = $state("scroll");
+    let currentPageIndex = $state(0);
+    let comicWidth = $state("medium");
 
-    let showTutorial = $state(false);
-    let tutorialStep = $state(1);
+    let currentChapter = $derived(chapters[currentChapterIndex] || null);
+    let comicImages = $derived(currentChapter ? extractImages(currentChapter.content) : []);
 
-    let fontSize = $state(18);
-    let lineHeight = $state(1.8);
+    function extractImages(content) {
+        if (!content) return [];
+        const imgRegex = /<img[^>]+src=["']([^"']+)["']/g;
+        let urls = [];
+        let match;
+        while ((match = imgRegex.exec(content)) !== null) {
+            urls.push(match[1]);
+        }
+        
+        if (urls.length === 0) {
+            const urlRegex = /(https?:\/\/[^\s$.?#].[^\s]*\.(?:png|jpg|jpeg|gif|webp))/gi;
+            const rawUrls = content.match(urlRegex);
+            if (rawUrls) {
+                urls = rawUrls;
+            } else {
+                urls = content.split(/\n+/).map(l => l.trim()).filter(l => l.startsWith('/') || l.startsWith('http'));
+            }
+        }
+        
+        // Ensure URLs starting with /uploads/ point to the worker API
+        const API_BASE = "https://vhdp-worker.frenda.workers.dev";
+        return urls.map(url => {
+            if (url.startsWith("/uploads/")) {
+                return `${API_BASE}${url}`;
+            }
+            return url;
+        });
+    }
 
-    let paginatedContent = $state([]);
-    let handleResizeFn;
+    function nextChapter() {
+        if (currentChapterIndex < chapters.length - 1) {
+            currentChapterIndex++;
+            currentPageIndex = 0;
+            if (typeof window !== "undefined") {
+                window.scrollTo({ top: 0, behavior: "smooth" });
+            }
+        }
+    }
 
+    function prevChapter() {
+        if (currentChapterIndex > 0) {
+            currentChapterIndex--;
+            currentPageIndex = 0;
+            if (typeof window !== "undefined") {
+                window.scrollTo({ top: 0, behavior: "smooth" });
+            }
+        }
+    }
 
+    function nextPage() {
+        if (currentPageIndex < comicImages.length - 1) {
+            currentPageIndex++;
+        } else {
+            nextChapter();
+        }
+    }
+
+    function prevPage() {
+        if (currentPageIndex > 0) {
+            currentPageIndex--;
+        } else {
+            prevChapter();
+        }
+    }
 
     function loadScript(src) {
         return new Promise((resolve, reject) => {
@@ -170,9 +228,24 @@
                 }
 
                 const w = window.innerWidth;
-                let displayMode = w < 768 ? "single" : "double";
-                let bookWidth = displayMode === "single" ? 600 : 1200;
+                const h = window.innerHeight;
+                let bookWidth = 1200;
                 let bookHeight = 800;
+                let displayMode = "double";
+
+                if (w < 768) {
+                    displayMode = "single";
+                    bookWidth = Math.min(w - 20, 480);
+                    bookHeight = bookWidth * 1.4;
+                } else {
+                    displayMode = "double";
+                    bookWidth = Math.min(w - 80, 1100);
+                    bookHeight = bookWidth * 0.66;
+                    if (bookHeight > h - 140) {
+                        bookHeight = h - 140;
+                        bookWidth = bookHeight * 1.5;
+                    }
+                }
 
                 window.$(flipbookElement).turn({
                     width: bookWidth,
@@ -182,60 +255,40 @@
                     autoCenter: true,
                     duration: 1000,
                     page: 1,
-                    display: displayMode
+                    display: displayMode,
+                    when: {
+                        turning: function (event, page, view) {
+                            const audio = new Audio("/page-flip.mp3");
+                            audio.volume = 0.2;
+                            audio.play().catch(() => {});
+                        },
+                    },
                 });
-
-                // Add robust click handlers for turning pages in case CSS scaling breaks hitboxes
-                const viewport = flipbookElement.parentElement;
-                if (viewport) {
-                    viewport.addEventListener("click", (e) => {
-                        // Don't turn if clicking on a link
-                        if (e.target.closest('a') || e.target.closest('button')) return;
-                        
-                        const rect = viewport.getBoundingClientRect();
-                        const clickX = e.clientX - rect.left;
-                        
-                        // Left 40% turns back, right 40% turns forward, middle 20% does nothing
-                        if (clickX < rect.width * 0.4) {
-                            window.$(flipbookElement).turn("previous");
-                        } else if (clickX > rect.width * 0.6) {
-                            window.$(flipbookElement).turn("next");
-                        }
-                    });
-                }
 
                 handleResizeFn = () => {
                     if (!window.$ || !flipbookElement || !window.$(flipbookElement).turn("is")) return;
-                    
                     const curW = window.innerWidth;
                     const curH = window.innerHeight;
-                    
-                    let targetDisplay = curW < 768 ? "single" : "double";
-                    if (window.$(flipbookElement).turn("display") !== targetDisplay) {
-                        window.$(flipbookElement).turn("display", targetDisplay);
-                        window.$(flipbookElement).turn("size", targetDisplay === "single" ? 600 : 1200, 800);
+                    let targetW = 1200;
+                    let targetH = 800;
+                    let targetDisplay = "double";
+
+                    if (curW < 768) {
+                        targetDisplay = "single";
+                        targetW = Math.min(curW - 20, 480);
+                        targetH = targetW * 1.4;
+                    } else {
+                        targetDisplay = "double";
+                        targetW = Math.min(curW - 80, 1100);
+                        targetH = targetW * 0.66;
+                        if (targetH > curH - 140) {
+                            targetH = curH - 140;
+                            targetW = targetH * 1.5;
+                        }
                     }
 
-                    const bookW = targetDisplay === "single" ? 600 : 1200;
-                    const bookH = 800;
-                    
-                    const availW = curW - (curW < 768 ? 20 : 40);
-                    const availH = curH - 80;
-                    
-                    const scaleW = availW / bookW;
-                    const scaleH = availH / bookH;
-                    let scale = Math.min(scaleW, scaleH);
-                    
-                    // Allow scaling up on large screens for full screen experience, cap at 1.5x
-                    if (scale > 1.5) scale = 1.5;
-
-                    const viewport = flipbookElement.parentElement;
-                    if (viewport) {
-                        // Fallback to transform for maximum compatibility
-                        viewport.style.transform = `scale(${scale})`;
-                        viewport.style.transformOrigin = "center top";
-                        viewport.style.zoom = 'normal'; // Reset zoom
-                    }
+                    window.$(flipbookElement).turn("display", targetDisplay);
+                    window.$(flipbookElement).turn("size", targetW, targetH);
                 };
 
                 window.addEventListener("resize", handleResizeFn);
@@ -257,95 +310,53 @@
         };
 
         startInit();
-
-        // Check tutorial
-        if (!localStorage.getItem('vhdp_reader_tutorial_shown')) {
-            showTutorial = true;
-        }
-    }
-
-    let toastMessage = $state("");
-    let toastTimeout;
-
-    function showToast(msg) {
-        toastMessage = msg;
-        clearTimeout(toastTimeout);
-        toastTimeout = setTimeout(() => {
-            toastMessage = "";
-        }, 3000);
     }
 
     async function toggleBookmark(e) {
         if (e) e.preventDefault();
-        
-        // Optimistic UI Update
-        const previousState = isBookmarked;
-        isBookmarked = !isBookmarked;
-        
-        if (isBookmarked) {
-            showToast("Đã thêm vào Thư viện");
-        } else {
-            showToast("Đã xóa khỏi Thư viện");
-        }
-
         try {
             const res = await apiFetch(`/api/books/${page.params.id}/toggle-bookmark`, {
                 method: "POST"
             });
             if (res.ok) {
                 const result = await res.json();
-                if (isBookmarked !== result.isBookmarked) {
-                    isBookmarked = result.isBookmarked;
-                }
-            } else {
-                isBookmarked = previousState;
-                showToast("Lỗi: Không thể cập nhật");
+                isBookmarked = result.isBookmarked;
             }
         } catch (err) {
             console.error(err);
-            isBookmarked = previousState;
-            showToast("Lỗi: Không thể kết nối");
         }
     }
 
-    onMount(() => {
+    onMount(async () => {
         if (browser) {
             const bookId = page.params.id;
-            
-            const loadData = async () => {
-                try {
-                    const res = await apiFetch(`/api/books/${bookId}`);
-                    if (res.ok) {
-                        const result = await res.json();
-                        book = result.book;
-                        chapters = result.chapters || [];
-                        isBookmarked = result.isBookmarked;
+            try {
+                const res = await apiFetch(`/api/books/${bookId}`);
+                if (res.ok) {
+                    const result = await res.json();
+                    book = result.book;
+                    chapters = result.chapters || [];
+                    isBookmarked = result.isBookmarked;
 
+                    if (book.type === "truyện tranh" || book.type === "comic" || book.type === "manga") {
+                        loading = false;
+                        isLoaded = true;
+                    } else {
                         await ensureJQueryAndTurn();
                         document.body.classList.add("paper-theme");
                         setTimeout(paginate, 500);
                     }
-                } catch (e) {
-                    console.error(e);
-                } finally {
+                }
+            } catch (e) {
+                console.error(e);
+            } finally {
+                if (book && (book.type === "truyện tranh" || book.type === "comic" || book.type === "manga")) {
                     loading = false;
                 }
-            };
-            
-            loadData();
+            }
 
             return () => {
-                document.body.classList.remove("paper-theme");
-                if (handleResizeFn) {
-                    window.removeEventListener("resize", handleResizeFn);
-                }
-                if (
-                    window.$ &&
-                    flipbookElement &&
-                    window.$(flipbookElement).turn("is")
-                ) {
-                    window.$(flipbookElement).turn("destroy");
-                }
+                // Cleanup if needed
             };
         }
     });
@@ -360,250 +371,101 @@
         <div class="spinner"></div>
     </div>
 {:else if book}
-
-        <div bind:this={measureElement} class="measure-layer" style="--fz: {fontSize}px; --lh: {lineHeight};"></div>
-
-        <div class="reader-container">
-            <a href="/library" class="floating-btn back" title="Quay lại">
-                <i class="bx bx-left-arrow-alt"></i>
-            </a>
-
-            <button
-                onclick={toggleBookmark}
-                class="floating-btn bookmark"
-                class:active={isBookmarked}
-                title={isBookmarked ? "Xóa khỏi thư viện" : "Thêm vào thư viện"}
-            >
-                <i class="bx {isBookmarked ? 'bxs-heart' : 'bx-heart'}"></i>
-            </button>
-
-            <div class="workspace">
-                <div class="flipbook-viewport" class:ready={isLoaded}>
-                    <div bind:this={flipbookElement} class="flipbook">
-                        {#each paginatedContent as page}
-                            <div class="page {page.type === 'hard' ? 'hard' : ''}">
-                                {#if page.type === "hard"}
-                                    <div class="hard-content">
-                                        {#if page.title}
-                                            <div class="book-cover-design">
-                                                {#if book?.cover_url && page.title !== "Hết"}
-                                                    <img
-                                                        src={book.cover_url}
-                                                        alt="Cover"
-                                                        class="cover-image-bg"
-                                                    />
-                                                {/if}
-                                                <h1>{page.title}</h1>
-                                                <h3>{page.sub}</h3>
-                                                <div class="ornament">❧</div>
-                                            </div>
-                                        {/if}
-                                    </div>
-                                {:else}
-                                    <div class="page-inner">
-                                        <article
-                                            class="content-body"
-                                            style="--fz: {fontSize}px; --lh: {lineHeight};"
-                                        >
-                                            {#if page.title}
-                                                <h2 class="chapter-header">
-                                                    {page.title}
-                                                </h2>
-                                            {/if}
-                                            <div class="text-content">
-                                                {@html page.content}
-                                            </div>
-                                        </article>
-                                        <div class="page-number">
-                                            - {page.pageNum} -
-                                        </div>
-                                    </div>
-                                {/if}
-                            </div>
-                        {/each}
+    {#if book.type === "truyện tranh" || book.type === "comic" || book.type === "manga"}
+        <div class="comic-reader-viewport">
+            <header class="comic-header-bar">
+                <div class="header-left">
+                    <a href="/truyen-tranh" class="comic-back-link">
+                        <i class="bx bx-left-arrow-alt"></i>
+                    </a>
+                    <div class="comic-title-meta">
+                        <h1>{book.title}</h1>
+                        <p>{book.author}</p>
                     </div>
                 </div>
 
-                {#if !isLoaded}
-                    <div class="loading-overlay">
-                        <div class="loader"></div>
-                        <p>Đang dàn trang sách...</p>
+                <div class="header-center">
+                    {#if chapters.length > 0}
+                        <select bind:value={currentChapterIndex} class="chapter-selector-dropdown">
+                            {#each chapters as ch, idx}
+                                <option value={idx}>{ch.title || `Chương ${ch.chapter_number}`}</option>
+                            {/each}
+                        </select>
+                    {/if}
+                </div>
+
+                <div class="header-right">
+                    <button class="control-toggle-btn" class:active={isBookmarked} onclick={toggleBookmark}>
+                        <i class="bx {isBookmarked ? 'bxs-heart' : 'bx-heart'}"></i>
+                    </button>
+                    <select bind:value={viewMode} class="view-mode-selector">
+                        <option value="scroll">Cuộn dọc</option>
+                        <option value="page">Từng trang</option>
+                    </select>
+                    <select bind:value={comicWidth} class="width-selector">
+                        <option value="narrow">Hẹp</option>
+                        <option value="medium">Vừa</option>
+                        <option value="wide">Rộng</option>
+                        <option value="full">Toàn màn hình</option>
+                    </select>
+                </div>
+            </header>
+
+            <main class="comic-content-area width-{comicWidth} mode-{viewMode}">
+                {#if comicImages.length > 0}
+                    {#if viewMode === "scroll"}
+                        <div class="scroll-comic-container">
+                            {#each comicImages as imgUrl, idx}
+                                <div class="comic-page-wrapper">
+                                    <div class="img-loader-spinner"></div>
+                                    <img src={imgUrl} alt="Trang {idx + 1}" loading="lazy" class="comic-single-image" onload={(e) => e.target.classList.add('loaded')} />
+                                </div>
+                            {/each}
+                        </div>
+                    {:else}
+                        <div class="page-comic-container">
+                            <button class="page-nav-overlay-btn prev" onclick={prevPage}>
+                                <i class="bx bx-chevron-left"></i>
+                            </button>
+                            <div class="single-image-viewport">
+                                <div class="img-loader-spinner"></div>
+                                <img src={comicImages[currentPageIndex]} alt="Trang {currentPageIndex + 1}" class="comic-single-image" onload={(e) => e.target.classList.add('loaded')} />
+                            </div>
+                            <button class="page-nav-overlay-btn next" onclick={nextPage}>
+                                <i class="bx bx-chevron-right"></i>
+                            </button>
+                        </div>
+                        <div class="page-comic-counter">
+                            Trang {currentPageIndex + 1} / {comicImages.length}
+                        </div>
+                    {/if}
+                {:else}
+                    <div class="no-images-fallback">
+                        <p>Chương này không có dữ liệu hình ảnh hoặc không thể hiển thị.</p>
+                        <div class="raw-content-box">
+                            {@html currentChapter?.content}
+                        </div>
                     </div>
                 {/if}
-            </div>
+            </main>
+
+            <footer class="comic-navigation-footer">
+                <button class="nav-ch-btn" disabled={currentChapterIndex === 0} onclick={prevChapter}>
+                    <i class="bx bx-left-arrow-alt"></i> Chương trước
+                </button>
+                <span class="nav-ch-indicator">
+                    Chương {currentChapterIndex + 1} / {chapters.length}
+                </span>
+                <button class="nav-ch-btn" disabled={currentChapterIndex === chapters.length - 1} onclick={nextChapter}>
+                    Chương sau <i class="bx bx-right-arrow-alt"></i>
+                </button>
+            </footer>
         </div>
 
-        {#if showTutorial}
-            <!-- svelte-ignore a11y_click_events_have_key_events -->
-            <!-- svelte-ignore a11y_no_static_element_interactions -->
-            <div class="tutorial-overlay" onclick={() => {
-                if (tutorialStep === 1) {
-                    tutorialStep = 2;
-                } else {
-                    showTutorial = false;
-                    localStorage.setItem('vhdp_reader_tutorial_shown', 'true');
-                }
-            }}>
-                {#if tutorialStep === 1}
-                    <div class="tutorial-spotlight right">
-                        <div class="click-zone right-zone"></div>
-                        <div class="tutorial-text">
-                            <i class="bx bx-pointer bx-tada"></i>
-                            <h2>Trang Tiếp</h2>
-                            <p>Nhấp vào <b>vùng bên phải</b> để lật trang</p>
-                            <span class="skip-text">Nhấp để tiếp tục</span>
-                        </div>
-                    </div>
-                {:else if tutorialStep === 2}
-                    <div class="tutorial-spotlight left">
-                        <div class="click-zone left-zone"></div>
-                        <div class="tutorial-text">
-                            <i class="bx bx-pointer bx-tada"></i>
-                            <h2>Trang Trước</h2>
-                            <p>Nhấp vào <b>vùng bên trái</b> để lùi lại</p>
-                            <span class="skip-text">Nhấp để đóng</span>
-                        </div>
-                    </div>
-                {/if}
-            </div>
-        {/if}
-
-{/if}
-
-{#if toastMessage}
-    <div class="newsprint-toast">
-        {toastMessage}
-    </div>
+    {/if}
 {/if}
 
 <style>
-    .newsprint-toast {
-        position: fixed;
-        bottom: 40px;
-        left: 50%;
-        transform: translateX(-50%);
-        background: #111;
-        color: #fff;
-        font-family: 'JetBrains Mono', monospace;
-        font-size: 13px;
-        font-weight: 700;
-        padding: 12px 24px;
-        border-radius: 4px;
-        z-index: 10000;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        animation: toast-fade-in 0.3s ease forwards;
-        pointer-events: none;
-        border: 2px solid #333;
-    }
-
-    @keyframes toast-fade-in {
-        from { opacity: 0; transform: translate(-50%, 20px); }
-        to { opacity: 1; transform: translate(-50%, 0); }
-    }
-
-    .tutorial-overlay {
-        position: fixed;
-        inset: 0;
-        z-index: 9999;
-        cursor: pointer;
-        font-family: 'Space Grotesk', sans-serif;
-    }
-
-    .tutorial-spotlight {
-        position: absolute;
-        inset: 0;
-        background: rgba(10, 10, 10, 0.85);
-        backdrop-filter: blur(4px);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        animation: fadeIn 0.4s ease-out;
-    }
-
-    .click-zone {
-        position: absolute;
-        top: 20px;
-        bottom: 20px;
-        border: 2px dashed #ed6f5c;
-        background: rgba(237, 111, 92, 0.1);
-        animation: pulse-zone 2s infinite ease-in-out;
-        pointer-events: none;
-    }
-
-    .click-zone.right-zone {
-        right: 20px;
-        width: calc(40% - 20px);
-    }
-
-    .click-zone.left-zone {
-        left: 20px;
-        width: calc(40% - 20px);
-    }
-
-    @keyframes pulse-zone {
-        0%, 100% { background: rgba(237, 111, 92, 0.05); }
-        50% { background: rgba(237, 111, 92, 0.15); }
-    }
-
-    .tutorial-text {
-        color: #f0f0f0;
-        text-align: center;
-        position: absolute;
-        font-family: 'Space Grotesk', sans-serif;
-        background: #111;
-        padding: 24px 32px;
-        border: 1px solid #333;
-        box-shadow: 6px 6px 0px #ed6f5c;
-        z-index: 2;
-    }
-
-    .tutorial-spotlight.right .tutorial-text {
-        right: 45%;
-    }
-
-    .tutorial-spotlight.left .tutorial-text {
-        left: 45%;
-    }
-
-    .tutorial-text i {
-        font-size: 36px;
-        color: #ed6f5c;
-        margin-bottom: 8px;
-        display: block;
-    }
-
-    .tutorial-text h2 {
-        font-family: 'Playfair Display', serif;
-        font-size: 24px;
-        margin: 0 0 8px 0;
-        color: #fff;
-    }
-
-    .tutorial-text p {
-        margin: 0;
-        font-size: 15px;
-        color: #aaa;
-    }
-
-    .tutorial-text b {
-        color: #ed6f5c;
-        font-weight: 600;
-    }
-
-    .skip-text {
-        display: block;
-        margin-top: 20px;
-        font-size: 12px;
-        color: #666;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-    }
-
-    @keyframes fadeIn {
-        from { opacity: 0; }
-        to { opacity: 1; }
-    }
-
     .loader-cover {
         display: flex;
         align-items: center;
@@ -766,12 +628,41 @@
         justify-content: center;
         margin-bottom: 2px;
         background: #000000;
+        position: relative;
+        min-height: 80vh;
+    }
+
+    .img-loader-spinner {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 40px;
+        height: 40px;
+        border: 3px solid rgba(255,255,255,0.05);
+        border-top-color: #e15b5b;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+        z-index: 0;
     }
 
     .comic-single-image {
         max-width: 100%;
         height: auto;
         display: block;
+        opacity: 0;
+        transition: opacity 0.5s ease;
+        position: relative;
+        z-index: 1;
+    }
+
+    .comic-single-image.loaded {
+        opacity: 1;
+    }
+    
+    :global(.comic-single-image.loaded + .img-loader-spinner),
+    :global(.img-loader-spinner:has(+ .comic-single-image.loaded)) {
+        display: none;
     }
 
     .page-comic-container {
@@ -790,6 +681,9 @@
         max-width: 100%;
         display: flex;
         justify-content: center;
+        position: relative;
+        width: 100%;
+        min-height: 80vh;
     }
 
     .page-nav-overlay-btn {
@@ -896,7 +790,7 @@
     .measure-layer {
         position: absolute;
         visibility: hidden;
-        width: 480px; /* 600px total page width - 120px horizontal padding */
+        width: 480px;
         line-height: var(--lh);
         font-size: var(--fz);
         font-family: 'Playfair Display', serif;

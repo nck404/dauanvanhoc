@@ -10,26 +10,9 @@
     let audios = $state([]);
     let videos = $state([]);
     let loaded = $state(false);
-    let searchQuery = $state("");
-    let isSearchModalOpen = $state(false);
-    let searchInput = $state(null);
 
     onMount(async () => {
         document.body.classList.add("paper-theme");
-
-        const handleKeyDown = (e) => {
-            if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
-                e.preventDefault();
-                if (!isSearchModalOpen) {
-                    openSearchModal();
-                }
-            }
-            if (e.key === 'Escape' && isSearchModalOpen) {
-                closeSearchModal();
-            }
-        };
-
-        window.addEventListener('keydown', handleKeyDown);
 
         try {
             const res = await apiFetch("/api/homepage");
@@ -47,25 +30,9 @@
         const t = setTimeout(() => { loaded = true; }, 420);
         return () => {
             clearTimeout(t);
-            window.removeEventListener('keydown', handleKeyDown);
             document.body.classList.remove("paper-theme");
         };
     });
-
-    function openSearchModal() {
-        isSearchModalOpen = true;
-        requestAnimationFrame(() => {
-            searchInput?.focus();
-            searchInput?.select?.();
-        });
-        document.body.classList.add("search-open");
-    }
-
-    function closeSearchModal() {
-        isSearchModalOpen = false;
-        searchQuery = "";
-        document.body.classList.remove("search-open");
-    }
 
     const SKELETON_COUNT = 3;
     
@@ -117,7 +84,7 @@
                     {/each}
                 </div>
 
-                <button type="button" class="search-cta" onclick={openSearchModal}>
+                <button type="button" class="search-cta" onclick={() => window.dispatchEvent(new CustomEvent('open-search'))}>
                     <i class="bx bx-search"></i>
                     <span>Khám phá tác phẩm</span>
                 </button>
@@ -323,108 +290,7 @@
     </div>
 </div>
 
-<!-- Search Modal -->
-{#if isSearchModalOpen}
-    <div class="search-open-global-blur" aria-hidden="true"></div>
-    <div class="spotlight-overlay" onclick={closeSearchModal}>
-        <div class="spotlight-panel" onclick={(e) => e.stopPropagation()}>
-            <div class="spotlight-search">
-                <i class="bx bx-search"></i>
-                <input
-                    type="text"
-                    placeholder="Tìm kiếm tác phẩm hoặc tác giả..."
-                    bind:value={searchQuery}
-                    bind:this={searchInput}
-                    autofocus
-                />
-                <kbd class="spotlight-kbd">ESC</kbd>
-            </div>
-            
-            <div class="spotlight-results">
-                {#if searchQuery.trim() !== ""}
-                    {@const filteredTruyenChu = truyenChu.filter(b => 
-                        b.title?.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                        b.author?.toLowerCase().includes(searchQuery.toLowerCase())
-                    )}
-                    {@const filteredTruyenTranh = truyenTranh.filter(b => 
-                        b.title?.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                        b.author?.toLowerCase().includes(searchQuery.toLowerCase())
-                    )}
-                    {#if filteredTruyenChu.length === 0 && filteredTruyenTranh.length === 0}
-                        <div class="no-results">
-                            <div class="empty-symbol">§</div>
-                            <p>Không tìm thấy kết quả phù hợp</p>
-                        </div>
-                    {:else}
-                        {#if filteredTruyenChu.length > 0}
-                            <div class="result-section">
-                                <div class="result-section-header">
-                                    <span>Truyện chữ</span>
-                                </div>
-                                <div class="result-items">
-                                    {#each filteredTruyenChu as book}
-                                        <a href="/read/{book.id}" class="result-item" onclick={closeSearchModal}>
-                                            <img src={book.cover_url} alt={book.title} class="result-cover" />
-                                            <div class="item-info">
-                                                <span class="item-title">{book.title}</span>
-                                                <span class="item-author">{book.author}</span>
-                                            </div>
-                                            <span class="result-arrow">→</span>
-                                        </a>
-                                    {/each}
-                                </div>
-                            </div>
-                        {/if}
-                        {#if filteredTruyenTranh.length > 0}
-                            <div class="result-section">
-                                <div class="result-section-header">
-                                    <span>Truyện tranh</span>
-                                </div>
-                                <div class="result-items">
-                                    {#each filteredTruyenTranh as book}
-                                        <a href="/read/{book.id}" class="result-item" onclick={closeSearchModal}>
-                                            <img src={book.cover_url} alt={book.title} class="result-cover" />
-                                            <div class="item-info">
-                                                <span class="item-title">{book.title}</span>
-                                                <span class="item-author">{book.author}</span>
-                                            </div>
-                                            <span class="result-arrow">→</span>
-                                        </a>
-                                    {/each}
-                                </div>
-                            </div>
-                        {/if}
-                    {/if}
-                {:else}
-                    <div class="search-helper">
-                        <i class="bx bx-search"></i>
-                        <p>Nhập từ khóa để bắt đầu tìm kiếm</p>
-                    </div>
-                {/if}
-            </div>
-        </div>
-    </div>
-{/if}
-
 <style>
-    /* Global search overlay - must sit above navbar area when search open */
-    .search-open-global-blur {
-        display: none;
-    }
-
-    body.search-open .search-open-global-blur,
-    body.search-open .spotlight-overlay {
-        display: flex;
-    }
-
-    body.search-open .masthead {
-        filter: blur(6px);
-        pointer-events: none;
-    }
-
-    body.search-open .page-container {
-        filter: blur(1px);
-    }
     .page-container {
         max-width: 1200px;
         margin: 0 auto;
@@ -729,7 +595,7 @@
         align-items: center;
         gap: 12px;
         padding-top: 32px;
-        border-top: 3px solid var(--newsprint-ink);
+        /* border-top: 3px solid var(--newsprint-ink); */
         position: relative;
     }
 

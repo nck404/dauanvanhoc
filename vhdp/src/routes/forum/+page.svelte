@@ -110,389 +110,413 @@
     }
 </script>
 
-<div class="forum-container">
-    <div class="forum-header">
-        <h1 class="pixel-font">DIỄN ĐÀN THẢO LUẬN</h1>
-        <p class="subtitle">Chia sẻ và thảo luận về các tác phẩm văn học địa phương</p>
-    </div>
-
-    {#if currentUser}
-        <div class="quick-post-bar-wrapper">
-            <a href="/forum/new" class="quick-post-bar">
-                <div class="user-avatar-sm">{currentUser.username[0].toUpperCase()}</div>
-                <span class="prompt-text">Hôm nay bạn muốn chia sẻ điều gì?</span>
-                <span class="action-trigger pixel-font">Đăng</span>
-            </a>
+<div class="forum-wrapper dot-grid-bg newsprint-texture">
+    <div class="forum-container">
+        <div class="forum-header newsprint-card hard-shadow-hover">
+            <h1 class="font-serif gradient-text">DIỄN ĐÀN THẢO LUẬN</h1>
+            <p class="subtitle font-body">Chia sẻ và thảo luận về các tác phẩm văn học địa phương</p>
+            
+            {#if currentUser}
+                <a href="/forum/new" class="newsprint-btn newsprint-btn--primary">
+                    <i class="bx bx-edit-alt"></i>
+                    &nbsp; Viết bài mới
+                </a>
+            {:else}
+                <a href="/login" class="newsprint-btn newsprint-btn--secondary">
+                    <i class="bx bx-log-in"></i>
+                    &nbsp; Đăng nhập để tham gia
+                </a>
+            {/if}
         </div>
-    {:else}
-        <div class="auth-prompt-card">
-            <p>Vui lòng <a href="/login" class="auth-link">đăng nhập</a> để tham gia thảo luận và chia sẻ bài viết mới.</p>
-        </div>
-    {/if}
 
-    <div class="threads-list">
-        {#each posts as post (post.id)}
-            <div class="thread-item-card" transition:fade>
-                <div class="thread-structure">
-                    <div class="avatar-col">
-                        <div class="user-avatar">{post.username[0].toUpperCase()}</div>
-                        <div class="thread-vertical-line"></div>
+        <div class="forum-content">
+            {#if posts.length > 0}
+                <div class="posts-section">
+                    <div class="section-header">
+                        <h2 class="section-title font-serif">Những bài viết gần đây</h2>
+                        <div class="section-divider"></div>
                     </div>
-                    <div class="content-col">
-                        <div class="thread-header">
-                            <span class="author-name">{post.name || post.username}</span>
-                            <span class="author-username">@{post.username}</span>
-                            <span class="dot">•</span>
-                            <span class="time">{formatDate(post.created_at)}</span>
+                    
+                    <div class="posts-grid">
+                        {#each posts as post (post.id)}
+                            <div class="post-card newsprint-card hard-shadow-hover reveal visible" transition:fade>
+                                <div class="post-header">
+                                    <div class="author-info">
+                                        <div class="user-avatar font-serif">{post.username[0].toUpperCase()}</div>
+                                        <div class="author-details">
+                                            <div class="author-name font-sans">{post.name || post.username}</div>
+                                            <div class="meta-info font-mono">
+                                                <span class="username">@{post.username}</span>
+                                                <span class="separator">/</span>
+                                                <span class="time">{formatDate(post.created_at)}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {#if currentUser && (currentUser.id === post.user_id || currentUser.role === "admin")}
+                                        <button class="delete-btn" onclick={() => deletePost(post.id)} aria-label="Xóa bài viết" title="Xóa bài viết">
+                                            <i class="bx bx-x"></i>
+                                        </button>
+                                    {/if}
+                                </div>
 
-                            {#if currentUser && (currentUser.id === post.user_id || currentUser.role === "admin")}
-                                <button class="delete-btn" onclick={() => deletePost(post.id)} aria-label="Xóa bài viết">
-                                    <i class="bx bx-trash"></i>
-                                </button>
-                            {/if}
-                        </div>
-                        
-                        <div class="thread-text">
-                            {@html parseMarkdown(post.content)}
-                        </div>
-                        
-                        {#if post.media_url}
-                            <div class="thread-media-container">
-                                <img src={post.media_url} alt="media content" class="thread-media" />
+                                <div class="post-content">
+                                    <div class="post-text font-body">
+                                        {@html parseMarkdown(post.content)}
+                                    </div>
+                                    
+                                    {#if post.media_url}
+                                        <div class="post-media-container">
+                                            <img src={post.media_url} alt="media content" class="post-media" />
+                                        </div>
+                                    {/if}
+                                </div>
+
+                                <div class="post-footer font-mono">
+                                    <button 
+                                        class="post-action-btn {post.is_liked ? 'liked' : ''}" 
+                                        onclick={() => toggleLike(post.id)}
+                                        disabled={!currentUser}
+                                        title={currentUser ? "Thích" : "Vui lòng đăng nhập"}
+                                    >
+                                        <i class="bx {post.is_liked ? 'bxs-heart' : 'bx-heart'}"></i>
+                                        <span>{post.likes_count}</span>
+                                    </button>
+
+                                    <a href="/forum/{post.id}" class="post-action-btn">
+                                        <i class="bx bx-message-square-detail"></i>
+                                        <span>{post.replies_count} phản hồi</span>
+                                    </a>
+                                </div>
                             </div>
-                        {/if}
-
-                        <div class="thread-actions">
-                            <button 
-                                class="action-btn" 
-                                class:liked={post.is_liked} 
-                                onclick={() => toggleLike(post.id)}
-                                disabled={!currentUser}
-                            >
-                                <i class="bx {post.is_liked ? 'bxs-heart' : 'bx-heart'}"></i>
-                                <span>{post.likes_count}</span>
-                            </button>
-
-                            <a href="/forum/{post.id}" class="action-btn">
-                                <i class="bx bx-comment"></i>
-                                <span>{post.replies_count}</span>
-                            </a>
-                        </div>
+                        {/each}
                     </div>
                 </div>
-            </div>
-        {:else}
-            <div class="empty-state">
-                <i class="bx bx-chat"></i>
-                <p>Chưa có bài viết nào được chia sẻ. Hãy là người đầu tiên!</p>
-            </div>
-        {/each}
-    </div>
+            {:else}
+                <div class="empty-state newsprint-card hard-shadow-hover">
+                    <div class="empty-icon font-serif">!</div>
+                    <h2 class="font-serif">Chưa có bài viết nào</h2>
+                    <p class="font-body">Hãy là người đầu tiên chia sẻ suy nghĩ của bạn!</p>
+                    {#if currentUser}
+                        <a href="/forum/new" class="newsprint-btn newsprint-btn--primary">Viết bài viết đầu tiên</a>
+                    {:else}
+                        <a href="/login" class="newsprint-btn newsprint-btn--secondary">Đăng nhập để bắt đầu</a>
+                    {/if}
+                </div>
+            {/if}
 
-    {#if page < totalPages}
-        <div class="load-more-container">
-            <button 
-                class="load-more-btn pixel-font" 
-                onclick={loadMore}
-                disabled={loading}
-            >
-                {loading ? "Đang tải..." : "Xem thêm"}
-            </button>
+            {#if page < totalPages}
+                <div class="load-more-container">
+                    <button 
+                        class="newsprint-btn newsprint-btn--secondary" 
+                        onclick={loadMore}
+                        disabled={loading}
+                    >
+                        {loading ? "ĐANG TẢI..." : "XEM THÊM BÀI VIẾT"}
+                    </button>
+                </div>
+            {/if}
         </div>
-    {/if}
-
-    {#if currentUser}
-        <a href="/forum/new" class="floating-fab-btn" aria-label="Đăng thread mới">
-            <i class="bx bx-plus"></i>
-        </a>
-    {/if}
+    </div>
 </div>
 
 <style>
+    .forum-wrapper {
+        min-height: 100vh;
+        padding-top: var(--space-md);
+        padding-bottom: var(--space-xl);
+    }
+
     .forum-container {
-        max-width: 620px;
+        max-width: 800px;
         margin: 0 auto;
-        padding: 24px 16px 100px;
-        position: relative;
+        margin-top: 70px;
+        padding: 0 var(--space-sm);
     }
 
     .forum-header {
         text-align: center;
-        margin-bottom: 32px;
+        padding: var(--space-xl) var(--space-md);
+        margin-bottom: var(--space-lg);
+        position: relative;
+    }
+
+    .forum-header::before {
+        content: '';
+        position: absolute;
+        top: 4px;
+        left: 4px;
+        right: 4px;
+        bottom: 4px;
+        border: 1px solid var(--newsprint-divider);
+        pointer-events: none;
     }
 
     .forum-header h1 {
-        font-size: 28px;
-        color: var(--ink);
-        margin-bottom: 8px;
+        font-size: 2.5rem;
+        margin-bottom: var(--space-xs);
+        letter-spacing: -0.02em;
     }
 
     .subtitle {
-        color: var(--text-muted);
-        font-size: 14px;
+        color: var(--newsprint-neutral-600);
+        font-size: 1.1rem;
+        margin-bottom: var(--space-md);
+        font-style: italic;
     }
 
-    .quick-post-bar-wrapper {
-        margin-bottom: 24px;
-    }
-
-    .quick-post-bar {
-        display: flex;
-        align-items: center;
-        gap: 14px;
-        background: var(--bg-wash);
-        border: 1.5px solid var(--line);
-        border-radius: 9999px;
-        padding: 8px 16px;
-        text-decoration: none;
-        box-shadow: var(--shadow);
-        transition: border-color 0.2s;
-    }
-
-    .quick-post-bar:hover {
-        border-color: var(--accent-dark);
-    }
-
-    .user-avatar-sm {
-        width: 28px;
-        height: 28px;
-        border-radius: 50%;
-        background: var(--primary-gradient);
-        border: 1.5px solid #ffffff;
-        color: white;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: 800;
-        font-size: 11px;
-    }
-
-    .prompt-text {
-        color: var(--text-muted);
-        font-size: 14px;
-        flex: 1;
-    }
-
-    .action-trigger {
-        background: var(--accent-dark);
-        color: white;
-        font-size: 11px;
-        font-weight: 700;
-        padding: 5px 12px;
-        border-radius: 9999px;
-    }
-
-    .auth-prompt-card {
-        text-align: center;
-        padding: 20px;
-        background: var(--bg-wash);
-        border: 1.5px solid var(--line);
-        border-radius: 12px;
-        font-size: 14px;
-        color: var(--text-muted);
-        margin-bottom: 24px;
-    }
-
-    .auth-link {
-        color: var(--accent-dark);
-        font-weight: 700;
-        text-decoration: underline;
-    }
-
-    .thread-item-card {
-        background: var(--bg-wash);
-        border: 1.5px solid var(--line);
-        border-radius: 12px;
-        padding: 16px;
-        margin-bottom: 16px;
-        box-shadow: var(--shadow);
-        transition: border-color 0.2s;
-    }
-
-    .thread-item-card:hover {
-        border-color: var(--accent-dark);
-    }
-
-    .thread-structure {
-        display: flex;
-        gap: 14px;
-    }
-
-    .avatar-col {
+    .forum-content {
         display: flex;
         flex-direction: column;
+        gap: var(--space-xl);
+    }
+
+    .section-header {
+        display: flex;
         align-items: center;
+        gap: var(--space-sm);
+        margin-bottom: var(--space-md);
+    }
+
+    .section-title {
+        font-size: 1.5rem;
+        color: var(--newsprint-ink);
+        white-space: nowrap;
+    }
+
+    .section-divider {
+        flex-grow: 1;
+        height: 1px;
+        background-color: var(--newsprint-ink);
+    }
+
+    .posts-grid {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-md);
+    }
+
+    .post-card {
+        padding: var(--space-md);
+        position: relative;
+    }
+
+    .post-card::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        right: 0;
+        width: 16px;
+        height: 16px;
+        background: var(--newsprint-ink);
+        clip-path: polygon(100% 0, 0 100%, 100% 100%);
+    }
+
+    .post-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        margin-bottom: var(--space-md);
+        padding-bottom: var(--space-sm);
+        border-bottom: 1px solid var(--newsprint-divider);
+    }
+
+    .author-info {
+        display: flex;
+        align-items: center;
+        gap: var(--space-sm);
     }
 
     .user-avatar {
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
-        background: var(--primary-gradient);
-        border: 2px solid #ffffff;
-        color: white;
+        width: 48px;
+        height: 48px;
+        background: var(--newsprint-ink);
+        color: var(--newsprint-bg);
         display: flex;
         align-items: center;
         justify-content: center;
-        font-weight: 800;
-        font-size: 15px;
+        font-size: 1.2rem;
+        border-radius: 0;
+        border: 1px solid var(--newsprint-ink);
     }
 
-    .thread-vertical-line {
-        width: 2px;
-        flex: 1;
-        background: var(--line-faint);
-        margin-top: 8px;
-        margin-bottom: -16px;
-    }
-
-    .content-col {
-        flex: 1;
+    .author-details {
         display: flex;
         flex-direction: column;
-        gap: 6px;
-    }
-
-    .thread-header {
-        display: flex;
-        align-items: center;
-        font-size: 13px;
-        position: relative;
+        gap: 4px;
     }
 
     .author-name {
         font-weight: 700;
-        color: var(--ink);
+        font-size: 1rem;
+        color: var(--newsprint-ink);
     }
 
-    .author-username {
-        color: var(--text-muted);
-        margin-left: 6px;
-    }
-
-    .dot {
-        color: var(--text-muted);
-        margin: 0 4px;
-    }
-
-    .time {
-        color: var(--text-muted);
+    .meta-info {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.8rem;
+        color: var(--newsprint-neutral-500);
+        text-transform: uppercase;
     }
 
     .delete-btn {
-        margin-left: auto;
-        color: var(--text-muted);
-        font-size: 15px;
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid transparent;
+        color: var(--newsprint-neutral-400);
+        font-size: 1.2rem;
     }
 
     .delete-btn:hover {
-        color: var(--coral);
+        border-color: var(--newsprint-red);
+        color: var(--newsprint-red);
+        background: var(--newsprint-surface);
     }
 
-    .thread-text {
-        font-size: 14.5px;
-        color: var(--ink-soft);
-        line-height: 1.5;
-        word-break: break-word;
+    .post-content {
+        margin-bottom: var(--space-md);
     }
 
-    .thread-media-container {
-        border-radius: 8px;
-        overflow: hidden;
-        border: 1px solid var(--line);
-        margin-top: 8px;
-        max-height: 340px;
+    .post-text {
+        font-size: 1.1rem;
+        line-height: 1.7;
+        color: var(--newsprint-ink-soft);
     }
 
-    .thread-media {
+    .post-text :global(strong) {
+        font-weight: 700;
+        color: var(--newsprint-ink);
+    }
+
+    .post-text :global(a) {
+        color: var(--newsprint-red);
+        text-decoration: none;
+        border-bottom: 1px solid var(--newsprint-red);
+        transition: all 0.2s;
+    }
+
+    .post-text :global(a:hover) {
+        background: var(--newsprint-red);
+        color: var(--newsprint-white);
+    }
+
+    .post-text :global(code) {
+        font-family: 'JetBrains Mono', monospace;
+        background: var(--newsprint-surface);
+        padding: 0.1em 0.3em;
+        border: 1px solid var(--newsprint-divider);
+        font-size: 0.9em;
+    }
+
+    .post-media-container {
+        margin-top: var(--space-md);
+        border: 1px solid var(--newsprint-ink);
+        background: var(--newsprint-white);
+        padding: 4px;
+    }
+
+    .post-media {
         width: 100%;
-        height: auto;
-        max-height: 340px;
-        object-fit: cover;
+        max-height: 500px;
+        object-fit: contain;
         display: block;
+        background: var(--newsprint-surface);
     }
 
-    .thread-actions {
+    .post-footer {
         display: flex;
-        gap: 20px;
-        margin-top: 8px;
+        gap: var(--space-md);
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
     }
 
-    .action-btn {
-        display: inline-flex;
+    .post-action-btn {
+        display: flex;
         align-items: center;
         gap: 6px;
-        font-size: 13px;
-        color: var(--text-muted);
+        padding: 8px 12px;
+        border: 1px solid transparent;
+        color: var(--newsprint-neutral-600);
         font-weight: 600;
     }
 
-    .action-btn:hover {
-        color: var(--ink);
+    .post-action-btn:hover:not(:disabled) {
+        border-color: var(--newsprint-ink);
+        color: var(--newsprint-ink);
+        background: var(--newsprint-surface);
     }
 
-    .action-btn.liked {
-        color: var(--coral);
+    .post-action-btn.liked {
+        color: var(--newsprint-red);
     }
 
-    .action-btn i {
-        font-size: 18px;
+    .post-action-btn.liked:hover:not(:disabled) {
+        border-color: var(--newsprint-red);
+        background: var(--newsprint-surface);
+    }
+
+    .post-action-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    .post-action-btn i {
+        font-size: 1.2rem;
     }
 
     .empty-state {
         text-align: center;
-        padding: 48px;
-        color: var(--text-muted);
+        padding: var(--space-xl) var(--space-md);
+        background: var(--newsprint-surface);
     }
 
-    .empty-state i {
-        font-size: 40px;
-        margin-bottom: 8px;
+    .empty-icon {
+        font-size: 4rem;
+        font-weight: 700;
+        color: var(--newsprint-red);
+        margin-bottom: var(--space-sm);
+        line-height: 1;
+    }
+
+    .empty-state h2 {
+        font-size: 1.8rem;
+        color: var(--newsprint-ink);
+        margin-bottom: var(--space-xs);
+    }
+
+    .empty-state p {
+        color: var(--newsprint-neutral-600);
+        margin-bottom: var(--space-md);
+        font-style: italic;
     }
 
     .load-more-container {
         display: flex;
         justify-content: center;
-        margin-top: 24px;
+        margin-top: var(--space-md);
     }
 
-    .load-more-btn {
-        background: var(--bone);
-        border: 1.5px solid var(--line);
-        color: var(--ink-soft);
-        font-size: 12px;
-        font-weight: 700;
-        padding: 8px 20px;
-        border-radius: 9999px;
-        cursor: pointer;
-        transition: all 0.2s;
-        box-shadow: var(--shadow);
-    }
+    @media (max-width: 640px) {
+        .forum-header {
+            padding: var(--space-lg) var(--space-sm);
+        }
+        
+        .forum-header h1 {
+            font-size: 2rem;
+        }
 
-    .load-more-btn:hover {
-        border-color: var(--accent-dark);
-        color: var(--accent-dark);
-    }
-
-    .floating-fab-btn {
-        position: fixed;
-        bottom: 30px;
-        right: 30px;
-        width: 56px;
-        height: 56px;
-        border-radius: 50%;
-        background: var(--accent-dark);
-        color: white;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        box-shadow: 0 8px 24px rgba(225, 59, 59, 0.3);
-        z-index: 99;
-        font-size: 28px;
-        transition: transform 0.2s;
-    }
-
-    .floating-fab-btn:hover {
-        transform: scale(1.1);
+        .post-card {
+            padding: var(--space-sm);
+        }
+        
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+        }
     }
 </style>

@@ -66,15 +66,16 @@
 </script>
 
 <div class="auth-page dot-grid-bg">
-    <div class="auth-card newsprint-card">
-        <div class="auth-header border-b-4 border-[#111111] pb-6 mb-8">
-            <span class="label font-mono text-[10px] uppercase tracking-[0.2em] text-[#CC0000] font-bold block mb-4 flex items-center gap-3">
-                <span class="w-8 h-[2px] bg-[#CC0000]"></span>
+    <div class="auth-card">
+        <div class="auth-header">
+            <span class="label">
+                <span class="label-bar"></span>
                 Đăng nhập
             </span>
-            <h1 class="font-serif font-black text-4xl text-[#111111] leading-tight">
-                Chào mừng trở lại<span class="text-[#CC0000]">.</span>
+            <h1>
+                Chào mừng trở lại<span class="accent">.</span>
             </h1>
+            <p class="auth-subtitle">Đăng nhập để tiếp tục vào thư viện văn học</p>
         </div>
 
         <form onsubmit={handleLogin} class="auth-form">
@@ -97,7 +98,7 @@
                 <label for="password" class="font-mono text-[10px] uppercase tracking-[0.15em] font-bold text-[#111111] block mb-3">
                     Mật khẩu
                 </label>
-                <div class="relative">
+                <div class="password-field">
                     <input
                         type={showPassword ? "text" : "password"}
                         id="password"
@@ -105,16 +106,15 @@
                         bind:value={password}
                         autocomplete="current-password"
                         disabled={loading}
-                        class="newsprint-input w-full pr-14"
                     />
                     <button
                         type="button"
-                        class="toggle-password absolute right-0 bottom-0 w-12 h-12 border border-[#111111] bg-[#F9F9F7] flex items-center justify-center text-[#111111] hover:bg-[#111111] hover:text-[#F9F9F7] transition-all duration-200"
+                        class="toggle-password"
                         onclick={togglePasswordVisibility}
                         disabled={loading}
                         aria-label="Hiển thị/Ẩn mật khẩu"
                     >
-                        <i class={`bx ${showPassword ? "bx-hide" : "bx-show"} text-xl`}></i>
+                        <i class={`bx ${showPassword ? "bx-hide" : "bx-show"}`}></i>
                     </button>
                 </div>
             </div>
@@ -167,6 +167,64 @@
         background: var(--newsprint-white);
         border: 2px solid var(--newsprint-ink);
         box-shadow: 8px 8px 0px 0px var(--newsprint-ink);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .auth-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, var(--newsprint-red) 0%, var(--newsprint-red) 60%, var(--newsprint-ink) 60%, var(--newsprint-ink) 100%);
+    }
+
+    .auth-header {
+        margin-bottom: 32px;
+        padding-bottom: 24px;
+        border-bottom: 2px solid var(--newsprint-ink);
+    }
+
+    .auth-header .label {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.25em;
+        color: var(--newsprint-red);
+        margin-bottom: 16px;
+    }
+
+    .label-bar {
+        width: 32px;
+        height: 2px;
+        background: var(--newsprint-red);
+    }
+
+    .auth-header h1 {
+        font-family: 'Playfair Display', serif;
+        font-weight: 900;
+        font-size: 36px;
+        line-height: 1.1;
+        letter-spacing: -0.02em;
+        color: var(--newsprint-ink);
+        margin-bottom: 8px;
+    }
+
+    .auth-header .accent {
+        color: var(--newsprint-red);
+    }
+
+    .auth-subtitle {
+        font-family: 'Lora', serif;
+        font-size: 14px;
+        color: var(--newsprint-neutral-500);
+        margin-top: 8px;
     }
 
     .auth-form {
@@ -177,12 +235,81 @@
         margin-bottom: 24px;
     }
 
-    .toggle-password {
-        background: transparent;
+    .input-group label {
+        display: block;
+        margin-bottom: 8px;
+    }
+
+    .newsprint-input {
+        width: 100%;
         border: none;
-        cursor: pointer;
+        border-bottom: 2px solid var(--newsprint-ink);
+        background: transparent;
+        padding: 12px 0;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 14px;
+        color: var(--newsprint-ink);
+        outline: none;
         transition: all 0.2s ease-out;
         border-radius: 0px;
+    }
+
+    .newsprint-input:focus {
+        border-bottom-color: var(--newsprint-red);
+        background: var(--newsprint-surface);
+    }
+
+    .newsprint-input::placeholder {
+        color: var(--newsprint-neutral-400);
+    }
+
+    .newsprint-input:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    .password-field {
+        display: flex;
+        align-items: stretch;
+        border: 2px solid var(--newsprint-ink);
+        background: var(--newsprint-white);
+        transition: all 0.2s ease-out;
+    }
+
+    .password-field:focus-within {
+        border-color: var(--newsprint-red);
+        background: var(--newsprint-surface);
+    }
+
+    .password-field input {
+        flex: 1;
+        border: none;
+        outline: none;
+        padding: 14px 16px;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 14px;
+        color: var(--newsprint-ink);
+        background: transparent;
+        min-width: 0;
+    }
+
+    .password-field input::placeholder {
+        color: var(--newsprint-neutral-400);
+    }
+
+    .toggle-password {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 48px;
+        min-height: 48px;
+        border: none;
+        border-left: 1px solid var(--newsprint-divider);
+        background: transparent;
+        color: var(--newsprint-neutral-500);
+        cursor: pointer;
+        transition: all 0.2s ease-out;
+        font-size: 20px;
     }
 
     .toggle-password:hover:not(:disabled) {
@@ -193,6 +320,25 @@
     .toggle-password:disabled {
         opacity: 0.5;
         cursor: not-allowed;
+    }
+
+    .auth-divider {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        margin: 32px 0;
+    }
+
+    .auth-divider span {
+        flex: 1;
+        height: 1px;
+        background: var(--newsprint-divider);
+    }
+
+    .auth-footer {
+        text-align: center;
+        font-size: 14px;
+        color: var(--newsprint-neutral-600);
     }
 
     .loading-spinner {

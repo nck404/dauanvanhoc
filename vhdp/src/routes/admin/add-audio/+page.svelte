@@ -12,6 +12,8 @@
     let lyricsField = $state('');
 
     onMount(async () => {
+        document.body.classList.add("paper-theme");
+        
         if (typeof window !== "undefined") {
             const Quill = (await import("quill")).default;
             await import("quill/dist/quill.snow.css");
@@ -34,6 +36,10 @@
                 lyricsField = quill.root.innerHTML;
             });
         }
+        
+        return () => {
+            document.body.classList.remove("paper-theme");
+        };
     });
 
     async function handleFormSubmit(e) {
@@ -45,8 +51,8 @@
         const formData = new FormData(e.currentTarget);
         const title = formData.get("title");
         const author = formData.get("author");
-        const cover_url = formData.get("cover_url");
         const audioFile = formData.get("audio_file");
+        const coverFile = formData.get("cover_file");
 
         if (!audioFile || audioFile.size === 0) {
             errorMsg = "Vui lòng chọn file audio";
@@ -55,6 +61,26 @@
         }
 
         let audio_url = "";
+        let cover_url = "";
+
+        // Upload cover if exists
+        if (coverFile && coverFile.size > 0) {
+            try {
+                const uploadFormData = new FormData();
+                uploadFormData.append("file", coverFile);
+                const fileName = `${Date.now()}-cover-${coverFile.name.replace(/[^a-zA-Z0-9.-]/g, "_")}`;
+                const uploadRes = await apiFetch(`/uploads/covers/${fileName}`, {
+                    method: "POST",
+                    body: uploadFormData
+                });
+                if (uploadRes.ok) {
+                    const uploadResult = await uploadRes.json();
+                    cover_url = uploadResult.url;
+                }
+            } catch (err) {
+                console.error("Cover upload error", err);
+            }
+        }
         try {
             const uploadFormData = new FormData();
             uploadFormData.append("file", audioFile);
@@ -107,134 +133,195 @@
 </script>
 
 <svelte:head>
-    <title>Thêm Audio Mới - Admin</title>
+    <title>Thêm Audio Mới - Tòa Soạn</title>
 </svelte:head>
 
-<div class="admin-container">
-    <div class="content-wrapper">
-        <div class="header">
-            <a href="/admin" class="back-link"><i class="bx bx-arrow-back"></i> Quay lại Admin</a>
-            <h1><i class="bx bx-podcast"></i> Thêm Audio / Truyện Đọc Mới</h1>
-            <p>Upload File Mp3 và nhập nội dung chạy song song</p>
-        </div>
+<div class="side-rail left">
+    <div class="rail-text">Tòa Soạn — Audio / Podcast</div>
+</div>
+
+<div class="page-container">
+    <div class="header-action-row">
+        <a href="/admin" class="back-navigation-btn font-mono">
+            <i class="bx bx-left-arrow-alt"></i> Quay lại Tòa Soạn
+        </a>
+    </div>
+
+    <div class="content-wrapper newsprint-card hard-shadow">
+        <header class="form-header">
+            <div class="header-label">
+                <span class="header-label-bar"></span>
+                <span>Biên tập Nội dung</span>
+            </div>
+            
+            <h1 class="page-title">
+                Phát thanh <em class="page-accent">Audio mới</em><span class="page-dot">.</span>
+            </h1>
+            
+            <p class="page-lead">
+                Tải lên bản ghi âm (MP3) và nhập nội dung văn bản để hệ thống có thể đồng bộ khi phát.
+            </p>
+        </header>
 
         {#if errorMsg}
-            <div class="alert error">{errorMsg}</div>
+            <div class="alert error font-mono">{errorMsg}</div>
         {/if}
 
         {#if successMsg}
-            <div class="alert success">{successMsg}</div>
+            <div class="alert success font-mono">{successMsg}</div>
         {/if}
 
         <form onsubmit={handleFormSubmit} class="add-form">
             <div class="form-grid">
                 <div class="form-group">
-                    <label for="title">Tựa đề Audio/Truyện *</label>
-                    <input type="text" id="title" name="title" required placeholder="Ví dụ: Lão Hạc (Audio)" />
+                    <label for="title" class="font-mono">Tựa đề Audio/Truyện *</label>
+                    <input type="text" id="title" name="title" required placeholder="Ví dụ: Lão Hạc (Audio)" class="newsprint-input" />
                 </div>
 
                 <div class="form-group">
-                    <label for="author">Tác giả *</label>
-                    <input type="text" id="author" name="author" required placeholder="Nam Cao..." />
+                    <label for="author" class="font-mono">Tác giả / Diễn đọc *</label>
+                    <input type="text" id="author" name="author" required placeholder="Ví dụ: Nam Cao" class="newsprint-input" />
                 </div>
 
                 <div class="form-group">
-                    <label for="cover_url">Link Ảnh Bìa (URL) - Tùy chọn</label>
-                    <input type="url" id="cover_url" name="cover_url" placeholder="https://..." />
+                    <label for="cover_file" class="font-mono">Ảnh bìa (Tùy chọn)</label>
+                    <input type="file" id="cover_file" name="cover_file" accept="image/*" class="newsprint-input file-input" />
                 </div>
 
                 <div class="form-group">
-                    <label for="audio_file">Upload file MP3/WAV *</label>
-                    <input type="file" id="audio_file" name="audio_file" accept="audio/*" required class="file-input" />
+                    <label for="audio_file" class="font-mono">Tệp MP3/WAV *</label>
+                    <input type="file" id="audio_file" name="audio_file" accept="audio/*" required class="newsprint-input file-input" />
                 </div>
             </div>
 
             <div class="form-group full-width">
-                <label for="lyrics">Nội dung Lyrics / Truyện Chữ *</label>
-                <!-- Hidden input for Quill content -->
+                <label for="lyrics" class="font-mono">Nội dung Văn bản / Lời bài hát *</label>
                 <input type="hidden" name="lyrics" bind:value={lyricsField} />
                 <div class="editor-wrapper">
-                    <div bind:this={editorContainer} class="quill-editor"></div>
+                    <div bind:this={editorContainer} class="quill-editor font-serif"></div>
                 </div>
             </div>
 
             <div class="form-actions">
-                <button type="submit" class="comic-btn comic-btn--red comic-btn--lg submit-btn"><i class="bx bx-upload"></i> Đăng Audio</button>
+                <button type="submit" class="newsprint-btn newsprint-btn--primary" disabled={loading}>
+                    <i class="bx bx-upload"></i> {loading ? 'Đang tải lên...' : 'Phát Hành Audio'}
+                </button>
             </div>
         </form>
     </div>
 </div>
 
 <style>
-    .admin-container {
-        padding: 40px 20px;
-        max-width: 1200px;
+    .page-container {
+        max-width: 1000px;
         margin: 0 auto;
+        padding: 60px 24px 120px;
+    }
+
+    .header-action-row {
+        margin-bottom: 24px;
+    }
+
+    .back-navigation-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-weight: 700;
+        color: var(--newsprint-ink);
+        text-transform: uppercase;
+        font-size: 11px;
+        letter-spacing: 0.1em;
+        text-decoration: none;
+    }
+
+    .back-navigation-btn:hover {
+        color: var(--newsprint-red);
     }
 
     .content-wrapper {
-        background: #fff;
-        border-radius: 20px;
-        box-shadow: var(--shadow);
-        padding: 40px;
+        padding: 40px 48px;
+        background: var(--newsprint-white);
     }
 
-    .header {
-        margin-bottom: 30px;
-        padding-bottom: 20px;
-        border-bottom: 1px solid rgba(0,0,0,0.05);
+    .form-header {
+        margin-bottom: 40px;
+        border-bottom: 2px solid var(--newsprint-ink);
+        padding-bottom: 30px;
     }
 
-    .header h1 {
-        font-size: 28px;
-        color: var(--accent-dark);
-        margin: 10px 0;
+    .header-label {
         display: flex;
         align-items: center;
-        gap: 10px;
+        gap: 12px;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.25em;
+        color: var(--newsprint-red);
+        margin-bottom: 16px;
     }
 
-    .header p {
-        color: var(--text-muted);
+    .header-label-bar {
+        width: 32px;
+        height: 2px;
+        background: var(--newsprint-red);
     }
 
-    .back-link {
-        display: inline-flex;
-        align-items: center;
-        gap: 5px;
-        color: var(--text-muted);
-        font-weight: 600;
-        margin-bottom: 15px;
+    .page-title {
+        font-family: 'Playfair Display', serif;
+        font-weight: 900;
+        font-size: 42px;
+        line-height: 1.1;
+        color: var(--newsprint-ink);
+        margin-bottom: 12px;
     }
 
-    .back-link:hover {
-        color: var(--accent-dark);
+    .page-title em {
+        font-style: italic;
+        color: var(--newsprint-red);
+    }
+
+    .page-dot {
+        color: var(--newsprint-red);
+    }
+
+    .page-lead {
+        font-family: 'Lora', serif;
+        font-size: 15px;
+        color: var(--newsprint-neutral-600);
+        max-width: 60ch;
     }
 
     .alert {
-        padding: 15px 20px;
-        border-radius: 12px;
-        margin-bottom: 20px;
-        font-weight: 600;
+        padding: 12px 16px;
+        font-size: 12px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-bottom: 24px;
+        border: 2px solid var(--newsprint-ink);
     }
 
     .alert.error {
-        background: rgba(225, 91, 91, 0.1);
-        color: var(--accent-dark);
-        border: 1px solid rgba(225, 91, 91, 0.2);
+        background: var(--newsprint-white);
+        color: var(--newsprint-red);
+        border-color: var(--newsprint-red);
+        box-shadow: 4px 4px 0 var(--newsprint-red);
     }
 
     .alert.success {
-        background: rgba(34, 197, 94, 0.1);
-        color: #16a34a;
-        border: 1px solid rgba(34, 197, 94, 0.2);
+        background: var(--newsprint-ink);
+        color: var(--newsprint-white);
+        border-color: var(--newsprint-ink);
+        box-shadow: 4px 4px 0 var(--newsprint-ink);
     }
 
     .form-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-        gap: 25px;
-        margin-bottom: 25px;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 24px;
+        margin-bottom: 24px;
     }
 
     .form-group {
@@ -248,79 +335,95 @@
     }
 
     label {
-        font-weight: 600;
-        font-size: 14px;
-        color: var(--text-main);
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: var(--newsprint-ink);
     }
 
-    input[type="text"], input[type="url"], select {
+    .newsprint-input {
         padding: 12px 16px;
-        border: 2px solid rgba(0,0,0,0.1);
-        border-radius: 10px;
-        font-family: inherit;
-        font-size: 15px;
-        transition: all 0.3s;
+        border: 2px solid var(--newsprint-ink);
+        background: var(--newsprint-surface);
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 13px;
+        color: var(--newsprint-ink);
+        transition: all 0.2s;
     }
 
-    input:focus, select:focus {
+    .newsprint-input:focus {
         outline: none;
-        border-color: var(--accent-dark);
-        box-shadow: 0 0 0 4px rgba(225, 91, 91, 0.1);
+        background: var(--newsprint-white);
+        box-shadow: 4px 4px 0 var(--newsprint-ink);
+        transform: translate(-2px, -2px);
     }
 
     .file-input {
-        padding: 10px;
-        border: 2px dashed rgba(0,0,0,0.2);
-        border-radius: 10px;
-        width: 100%;
+        padding: 9px;
         cursor: pointer;
     }
 
     .editor-wrapper {
-        border-radius: 12px;
-        overflow: hidden;
-        border: 2px solid rgba(0,0,0,0.1);
+        border: 2px solid var(--newsprint-ink);
+        background: var(--newsprint-white);
     }
 
     .quill-editor {
         min-height: 400px;
-        background: #fff;
+        font-size: 16px;
+    }
+    
+    :global(.ql-toolbar.ql-snow) {
+        border: none !important;
+        border-bottom: 2px solid var(--newsprint-ink) !important;
+        font-family: 'JetBrains Mono', monospace;
+    }
+    
+    :global(.ql-container.ql-snow) {
+        border: none !important;
     }
 
     .form-actions {
-        margin-top: 30px;
+        margin-top: 32px;
         display: flex;
         justify-content: flex-end;
+        border-top: 2px solid var(--newsprint-divider);
+        padding-top: 24px;
     }
 
-    .submit-btn {
-        background: var(--primary-gradient);
-        color: white;
-        padding: 14px 32px;
-        border-radius: 12px;
-        font-size: 16px;
+    .side-rail {
+        position: fixed;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 32px;
+        height: auto;
+        background: transparent;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 5;
+        pointer-events: none;
+    }
+    
+    .side-rail.left { left: 20px; }
+    
+    .rail-text {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 9px;
         font-weight: 700;
-        display: flex;
-        align-items: center;
-        gap: 10px;
+        letter-spacing: 0.25em;
+        text-transform: uppercase;
+        color: var(--newsprint-neutral-400);
+        transform: rotate(-90deg);
+        white-space: nowrap;
     }
 
-    .submit-btn {
-        padding: 14px 32px;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        font-size: 16px;
-    }
-
-    .submit-btn:hover:not(:disabled) {
-        box-shadow: 2px 2px 0px #1a1515;
-        transform: translate(2px, 2px);
-    }
-
-    .submit-btn:disabled {
-        opacity: 0.55;
-        cursor: not-allowed;
+    @media (max-width: 768px) {
+        .form-grid { grid-template-columns: 1fr; }
+        .content-wrapper { padding: 24px; }
+        .side-rail { display: none; }
+        .page-title { font-size: 32px; }
     }
 </style>
 

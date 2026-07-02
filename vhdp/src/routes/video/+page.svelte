@@ -37,17 +37,43 @@
     <div class="rail-text">Vol. 01 / Số Nº 01 — MMXXVI</div>
 </div>
 
-<div class="video-dashboard">
-    <div class="header-section">
-        <span class="label">Ấn bản truyền hình</span>
-        <h1>Thư viện <em>Video</em> &amp; <em>Tư liệu</em><span class="dot">.</span></h1>
-        <p class="lead">Góc chia sẻ nội dung video tư liệu lịch sử, điện ảnh địa phương và kịch nghệ truyền thống.</p>
-    </div>
+<div class="page-container">
+    <header class="page-header">
+        <div class="header-label">
+            <span class="header-label-bar"></span>
+            <span>Video Tư Liệu</span>
+        </div>
+        
+        <h1 class="page-title">
+            Thư viện <em class="page-accent">video</em> &amp; tư liệu<span class="page-dot">.</span>
+        </h1>
+        
+        <p class="page-lead">
+            Góc chia sẻ nội dung video tư liệu lịch sử, điện ảnh địa phương và kịch nghệ truyền thống.
+        </p>
+
+        <div class="editorial-search">
+            <i class="bx bx-search editorial-search-icon"></i>
+            <input
+                type="text"
+                placeholder="Tìm kiếm tác phẩm hoặc tác giả..."
+                class="editorial-search-input"
+            />
+            <button class="editorial-search-btn">Tìm kiếm</button>
+        </div>
+    </header>
+
+    <section class="content-section">
+        <div class="section-header">
+            <div class="section-count">{videos.length} Video</div>
+            <div class="small-ornament">✧✧✧✧</div>
+            <div class="section-updated">Cập nhật liên tục</div>
+        </div>
 
 <div class="grid">
         {#if !loaded}
             {#each Array(SKELETON_COUNT).fill(0) as _, i}
-                <div class="comic-card video-card">
+                <div class="newsprint-card video-card">
                     <div class="cover-box">
                         <div class="placeholder">
                             <SkeletonCard type="video" />
@@ -63,13 +89,14 @@
                 </div>
             {/each}
         {:else if !videos.length}
-            <div class="empty">
-                Chưa có Video nào được thêm vào hệ thống.
+            <div class="empty empty--center">
+                <div class="empty-symbol">§</div>
+                <p>Không tìm thấy video nào.</p>
             </div>
         {:else}
             {#each videos as video}
-                <a href="/video/{video.id}" class="comic-card video-card">
-                    <div class="cover-box">
+                <a href="/video/{video.id}" class="newsprint-card hard-shadow-hover video-card">
+                    <div class="cover-box border-b-2 border-[#111111]">
                         {#if video.cover_url}
                             <img src={video.cover_url} alt="Cover" />
                         {:else}
@@ -91,6 +118,7 @@
             {/each}
         {/if}
     </div>
+    </section>
 </div>
 
 <style>
@@ -123,57 +151,107 @@
     .side-rail.right .rail-text { transform: rotate(180deg); }
     .side-rail.left .rail-text { transform: none; }
 
-    .video-dashboard {
-        max-width: 1200px;
+    .page-container {
+        max-width: 1280px;
         margin: 0 auto;
-        padding: 60px 40px 120px;
+        padding: 100px 24px 120px;
     }
 
-    .header-section {
-        text-align: center;
-        margin-bottom: 60px;
-        border-bottom: 1px solid var(--line);
-        padding-bottom: 40px;
+    .page-header {
+        padding: 60px 0 80px;
+        border-bottom: 4px solid var(--newsprint-ink);
+        margin-bottom: 30px;
     }
 
-    .header-section .label {
-        font-family: 'Space Grotesk', sans-serif;
-        font-size: 11px;
+    .header-label {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 10px;
         font-weight: 700;
-        letter-spacing: 0.22em;
         text-transform: uppercase;
-        color: var(--coral);
-        margin-bottom: 15px;
-        display: inline-block;
+        letter-spacing: 0.25em;
+        color: var(--newsprint-red);
+        margin-bottom: 24px;
     }
 
-    .header-section h1 {
-        font-family: 'Space Grotesk', sans-serif;
-        font-weight: 800;
-        font-size: clamp(32px, 4vw, 48px);
-        line-height: 1.2;
-        margin-bottom: 15px;
-        color: var(--ink);
+    .header-label-bar {
+        width: 48px;
+        height: 2px;
+        background: var(--newsprint-red);
     }
 
-    .header-section h1 em {
+    .page-title {
         font-family: 'Playfair Display', serif;
+        font-weight: 900;
+        font-size: clamp(38px, 4.5vw, 64px);
+        line-height: 1.1;
+        letter-spacing: -0.025em;
+        color: var(--newsprint-ink);
+        margin-bottom: 24px;
+    }
+
+    .page-title em {
         font-style: italic;
-        font-weight: 500;
-        color: var(--coral);
+        color: var(--newsprint-red);
     }
 
-    .header-section h1 .dot {
-        color: var(--coral);
+    .page-dot {
+        color: #cc0000;
     }
 
-    .header-section .lead {
-        font-family: 'Space Grotesk', sans-serif;
+    .page-lead {
+        font-family: 'Lora', serif;
         font-size: 16px;
-        color: var(--ink-soft);
-        max-width: 50ch;
-        margin: 0 auto;
         line-height: 1.6;
+        color: var(--newsprint-neutral-600);
+        max-width: 44ch;
+        margin-bottom: 32px;
+    }
+
+    .search-wrapper {
+        border: 2px solid var(--newsprint-ink);
+    }
+
+    .small-ornament {
+        text-align: center;
+        font-family: 'Playfair Display', serif;
+        font-size: 16px;
+        letter-spacing: 0.1em;
+        color: var(--newsprint-red);
+        padding: 0;
+        margin: 0;
+    }
+
+    .content-section {
+        margin-top: 20px;
+    }
+
+    .section-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding-top: 16px;
+        margin-bottom: 32px;
+    }
+
+    .section-count {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 13px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.18em;
+        color: var(--newsprint-ink);
+    }
+
+    .section-updated {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 13px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.15em;
+        color: var(--newsprint-neutral-500);
     }
 
     .grid {

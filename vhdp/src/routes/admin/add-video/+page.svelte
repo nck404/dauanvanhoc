@@ -15,6 +15,8 @@
     let uploadMessage = $state({ type: "", text: "" });
 
     onMount(async () => {
+        document.body.classList.add("paper-theme");
+        
         if (typeof window !== "undefined") {
             const Quill = (await import("quill")).default;
             await import("quill/dist/quill.snow.css");
@@ -38,6 +40,10 @@
             });
 
         }
+        
+        return () => {
+            document.body.classList.remove("paper-theme");
+        };
     });
 
     async function handleSubmit(event) {
@@ -127,7 +133,7 @@
                     if (res.ok) {
                         uploadMessage = {
                             type: "success",
-                            text: "Tải lên Video thành công!",
+                            text: "Trình chiếu Video thành công!",
                         };
                         formEl.reset();
                         if (quill) quill.root.innerHTML = "";
@@ -173,100 +179,109 @@
 </script>
 
 <svelte:head>
-    <title>Thêm Video Mới - Admin</title>
+    <title>Thêm Video Mới - Tòa Soạn</title>
 </svelte:head>
 
-<div class="admin-container">
-    <div class="content-wrapper">
-        <div class="header">
-            <a href="/admin" class="back-link"
-                ><i class="bx bx-arrow-back"></i> Quay lại Admin</a
-            >
-            <h1><i class="bx bx-video"></i> Thêm Video / Sự Kiện Mới</h1>
-            <p>Upload File Video và viết bài giới thiệu</p>
-        </div>
+<div class="side-rail left">
+    <div class="rail-text">Tòa Soạn — Video / Phim</div>
+</div>
+
+<div class="page-container">
+    <div class="header-action-row">
+        <a href="/admin" class="back-navigation-btn font-mono">
+            <i class="bx bx-left-arrow-alt"></i> Quay lại Tòa Soạn
+        </a>
+    </div>
+
+    <div class="content-wrapper newsprint-card hard-shadow">
+        <header class="form-header">
+            <div class="header-label">
+                <span class="header-label-bar"></span>
+                <span>Biên tập Nội dung</span>
+            </div>
+            
+            <h1 class="page-title">
+                Trình chiếu <em class="page-accent">Video mới</em><span class="page-dot">.</span>
+            </h1>
+            
+            <p class="page-lead">
+                Đăng tải phim chuyển thể, video sự kiện, hoặc phóng sự liên quan đến tác phẩm văn học.
+            </p>
+        </header>
 
         {#if uploadMessage.text}
-            <div class="alert {uploadMessage.type}">{uploadMessage.text}</div>
+            <div class="alert {uploadMessage.type} font-mono">{uploadMessage.text}</div>
         {/if}
 
-        <form
-            onsubmit={handleSubmit}
-            class="add-form"
-        >
+        <form onsubmit={handleSubmit} class="add-form">
             <div class="form-grid">
                 <div class="form-group">
-                    <label for="title">Tựa đề Video *</label>
+                    <label for="title" class="font-mono">Tựa đề Video *</label>
                     <input
                         type="text"
                         id="title"
                         name="title"
                         value={form?.title ?? ""}
                         required
-                        placeholder="Ví dụ: Lão Hạc The Movie..."
+                        placeholder="Ví dụ: Phim Ngắn Lão Hạc"
+                        class="newsprint-input"
                     />
                 </div>
 
                 <div class="form-group">
-                    <label for="author">Tác giả / Nguồn *</label>
+                    <label for="author" class="font-mono">Sản xuất bởi / Nguồn *</label>
                     <input
                         type="text"
                         id="author"
                         name="author"
                         value={form?.author ?? ""}
                         required
-                        placeholder="Sản xuất bởi..."
+                        placeholder="Ví dụ: VTV, Nhóm Lục Mạch"
+                        class="newsprint-input"
                     />
                 </div>
 
                 <div class="form-group">
-                    <label for="thumbnail_file"
-                        >Upload Ảnh Bìa (Thumbnail) - Tùy chọn</label
-                    >
+                    <label for="thumbnail_file" class="font-mono">Ảnh bìa (Thumbnail) - Tùy chọn</label>
                     <input
                         type="file"
                         id="thumbnail_file"
                         name="thumbnail_file"
                         accept="image/jpeg,image/png,image/webp,image/gif"
-                        class="file-input"
+                        class="newsprint-input file-input"
                     />
-                    <small class="hint-text"
-                        >Định dạng: JPG, PNG, WebP, GIF. Kích thước tối đa: 10MB</small
-                    >
+                    <small class="hint-text font-mono">JPG, PNG, WebP. Tối đa: 10MB</small>
                 </div>
 
                 <div class="form-group">
-                    <label for="cover_url"
-                        >Hoặc dán link ảnh bìa - Tùy chọn</label
-                    >
+                    <label for="cover_url" class="font-mono">Hoặc liên kết ảnh tĩnh (URL)</label>
                     <input
                         type="url"
                         id="cover_url"
                         name="cover_url"
                         value={form?.cover_url ?? ""}
                         placeholder="https://..."
+                        class="newsprint-input"
                     />
-                    <small class="hint-text"
-                        >Chỉ dùng nếu không upload ảnh từ thiết bị</small
-                    >
+                    <small class="hint-text font-mono">Dùng khi không tải tệp lên</small>
                 </div>
 
                 <div class="form-group full-width">
-                    <label for="video_file">Upload file MP4/WebM *</label>
+                    <label for="video_file" class="font-mono">Tệp trình chiếu (MP4/WebM) *</label>
                     <input
                         type="file"
                         id="video_file"
                         name="video_file"
                         accept="video/*"
                         required
-                        class="file-input video-input"
+                        class="newsprint-input file-input video-input"
                     />
-                    <small class="hint-text">Kích thước tối đa: 512MB</small>
+                    <small class="hint-text font-mono">Kích thước tối đa cho phép: 512MB</small>
                 </div>
             </div>
 
             <div class="form-group full-width">
-                <label for="description">Mô Tả / Bài Viết *</label>
+                <label for="description" class="font-mono">Mô tả chi tiết / Nội dung *</label>
                 <!-- Hidden input for Quill content -->
                 <input
                     type="hidden"
@@ -274,14 +289,14 @@
                     bind:value={descriptionField}
                 />
                 <div class="editor-wrapper">
-                    <div bind:this={editorContainer} class="quill-editor"></div>
+                    <div bind:this={editorContainer} class="quill-editor font-serif"></div>
                 </div>
             </div>
 
             {#if isUploading || uploadProgress > 0}
                 <div class="progress-section">
-                    <div class="progress-info">
-                        <span>Đang tải lên dữ liệu...</span>
+                    <div class="progress-info font-mono">
+                        <span>Đang tải lên hệ thống lưu trữ...</span>
                         <span>{uploadProgress}%</span>
                     </div>
                     <div class="progress-container">
@@ -294,11 +309,11 @@
             {/if}
 
             <div class="form-actions">
-                <button type="submit" class="comic-btn comic-btn--red comic-btn--lg submit-btn" disabled={isUploading}>
+                <button type="submit" class="newsprint-btn newsprint-btn--primary" disabled={isUploading}>
                     {#if isUploading}
                         <i class="bx bx-loader-alt bx-spin"></i> Đang xử lý...
                     {:else}
-                        <i class="bx bx-upload"></i> Đăng Video
+                        <i class="bx bx-video-plus"></i> Phát Hành Video
                     {/if}
                 </button>
             </div>
@@ -307,75 +322,116 @@
 </div>
 
 <style>
-    .admin-container {
-        padding: 40px 20px;
-        max-width: 1200px;
+    .page-container {
+        max-width: 1000px;
         margin: 0 auto;
+        padding: 60px 24px 120px;
+    }
+
+    .header-action-row {
+        margin-bottom: 24px;
+    }
+
+    .back-navigation-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-weight: 700;
+        color: var(--newsprint-ink);
+        text-transform: uppercase;
+        font-size: 11px;
+        letter-spacing: 0.1em;
+        text-decoration: none;
+    }
+
+    .back-navigation-btn:hover {
+        color: var(--newsprint-red);
     }
 
     .content-wrapper {
-        background: #fff;
-        border-radius: 20px;
-        box-shadow: var(--shadow);
-        padding: 40px;
+        padding: 40px 48px;
+        background: var(--newsprint-white);
     }
 
-    .header {
-        margin-bottom: 30px;
-        padding-bottom: 20px;
-        border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    .form-header {
+        margin-bottom: 40px;
+        border-bottom: 2px solid var(--newsprint-ink);
+        padding-bottom: 30px;
     }
 
-    .header h1 {
-        font-size: 28px;
-        color: var(--accent-dark);
-        margin: 10px 0;
+    .header-label {
         display: flex;
         align-items: center;
-        gap: 10px;
+        gap: 12px;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.25em;
+        color: var(--newsprint-red);
+        margin-bottom: 16px;
     }
 
-    .header p {
-        color: var(--text-muted);
+    .header-label-bar {
+        width: 32px;
+        height: 2px;
+        background: var(--newsprint-red);
     }
 
-    .back-link {
-        display: inline-flex;
-        align-items: center;
-        gap: 5px;
-        color: var(--text-muted);
-        font-weight: 600;
-        margin-bottom: 15px;
+    .page-title {
+        font-family: 'Playfair Display', serif;
+        font-weight: 900;
+        font-size: 42px;
+        line-height: 1.1;
+        color: var(--newsprint-ink);
+        margin-bottom: 12px;
     }
 
-    .back-link:hover {
-        color: var(--accent-dark);
+    .page-title em {
+        font-style: italic;
+        color: var(--newsprint-red);
+    }
+
+    .page-dot {
+        color: var(--newsprint-red);
+    }
+
+    .page-lead {
+        font-family: 'Lora', serif;
+        font-size: 15px;
+        color: var(--newsprint-neutral-600);
+        max-width: 60ch;
     }
 
     .alert {
-        padding: 15px 20px;
-        border-radius: 12px;
-        margin-bottom: 20px;
-        font-weight: 600;
+        padding: 12px 16px;
+        font-size: 12px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-bottom: 24px;
+        border: 2px solid var(--newsprint-ink);
     }
 
     .alert.error {
-        background: rgba(225, 91, 91, 0.1);
-        color: var(--accent-dark);
-        border: 1px solid rgba(225, 91, 91, 0.2);
+        background: var(--newsprint-white);
+        color: var(--newsprint-red);
+        border-color: var(--newsprint-red);
+        box-shadow: 4px 4px 0 var(--newsprint-red);
     }
 
     .alert.success {
-        background: rgba(34, 197, 94, 0.1);
-        color: #16a34a;
-        border: 1px solid rgba(34, 197, 94, 0.2);
+        background: var(--newsprint-ink);
+        color: var(--newsprint-white);
+        border-color: var(--newsprint-ink);
+        box-shadow: 4px 4px 0 var(--newsprint-ink);
     }
 
     .form-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-        gap: 25px;
-        margin-bottom: 25px;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 24px;
+        margin-bottom: 24px;
     }
 
     .form-group {
@@ -389,123 +445,140 @@
     }
 
     label {
-        font-weight: 600;
-        font-size: 14px;
-        color: var(--text-main);
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: var(--newsprint-ink);
     }
 
-    input[type="text"],
-    input[type="url"],
-    select {
+    .newsprint-input {
         padding: 12px 16px;
-        border: 2px solid rgba(0, 0, 0, 0.1);
-        border-radius: 10px;
-        font-family: inherit;
-        font-size: 15px;
-        transition: all 0.3s;
+        border: 2px solid var(--newsprint-ink);
+        background: var(--newsprint-surface);
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 13px;
+        color: var(--newsprint-ink);
+        transition: all 0.2s;
+        width: 100%;
     }
 
-    input:focus,
-    select:focus {
+    .newsprint-input:focus {
         outline: none;
-        border-color: var(--accent-dark);
-        box-shadow: 0 0 0 4px rgba(225, 91, 91, 0.1);
+        background: var(--newsprint-white);
+        box-shadow: 4px 4px 0 var(--newsprint-ink);
+        transform: translate(-2px, -2px);
     }
 
     .file-input {
-        padding: 10px;
-        border: 2px dashed rgba(0, 0, 0, 0.2);
-        border-radius: 10px;
-        width: 100%;
+        padding: 9px;
         cursor: pointer;
-        transition: all 0.3s;
     }
-
-    .file-input:hover {
-        border-color: var(--accent-dark);
-        background: rgba(225, 91, 91, 0.05);
-    }
-
-    .file-input:focus {
-        outline: none;
-        border-color: var(--accent-dark);
-        box-shadow: 0 0 0 4px rgba(225, 91, 91, 0.1);
-    }
-
+    
     .video-input {
-        border-color: rgba(0, 0, 0, 0.3);
-        background: #f8fafc;
+        border-style: dashed;
+        background: var(--newsprint-white);
     }
 
     .hint-text {
-        font-size: 12px;
-        color: var(--text-muted);
-        margin-top: 2px;
+        font-size: 10px;
+        color: var(--newsprint-neutral-600);
+        margin-top: 4px;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
     }
 
     .editor-wrapper {
-        border-radius: 12px;
-        overflow: hidden;
-        border: 2px solid rgba(0, 0, 0, 0.1);
+        border: 2px solid var(--newsprint-ink);
+        background: var(--newsprint-white);
     }
 
     .quill-editor {
         min-height: 400px;
-        background: #fff;
+        font-size: 16px;
+    }
+    
+    :global(.ql-toolbar.ql-snow) {
+        border: none !important;
+        border-bottom: 2px solid var(--newsprint-ink) !important;
+        font-family: 'JetBrains Mono', monospace;
+    }
+    
+    :global(.ql-container.ql-snow) {
+        border: none !important;
     }
 
     .progress-section {
-        margin-top: 30px;
-        background: #f8fafc;
-        padding: 20px;
-        border-radius: 12px;
-        border: 1px solid rgba(0, 0, 0, 0.05);
+        margin-top: 32px;
+        background: var(--newsprint-surface);
+        padding: 24px;
+        border: 2px solid var(--newsprint-ink);
     }
 
     .progress-info {
         display: flex;
         justify-content: space-between;
-        margin-bottom: 10px;
-        font-weight: 600;
-        color: var(--text-main);
+        margin-bottom: 12px;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: var(--newsprint-ink);
     }
 
     .progress-container {
-        height: 12px;
-        background: #e2e8f0;
-        border-radius: 20px;
+        height: 8px;
+        background: var(--newsprint-neutral-200);
         overflow: hidden;
+        border: 1px solid var(--newsprint-ink);
     }
 
     .progress-bar {
         height: 100%;
-        background: var(--primary-gradient);
+        background: var(--newsprint-red);
         transition: width 0.3s ease;
     }
 
     .form-actions {
-        margin-top: 30px;
+        margin-top: 32px;
         display: flex;
         justify-content: flex-end;
+        border-top: 2px solid var(--newsprint-divider);
+        padding-top: 24px;
     }
 
-    .submit-btn {
-        display: inline-flex;
+    .side-rail {
+        position: fixed;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 32px;
+        height: auto;
+        background: transparent;
+        display: flex;
         align-items: center;
         justify-content: center;
-        gap: 10px;
-        padding: 14px 32px;
-        font-size: 16px;
+        z-index: 5;
+        pointer-events: none;
+    }
+    
+    .side-rail.left { left: 20px; }
+    
+    .rail-text {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 9px;
+        font-weight: 700;
+        letter-spacing: 0.25em;
+        text-transform: uppercase;
+        color: var(--newsprint-neutral-400);
+        transform: rotate(-90deg);
+        white-space: nowrap;
     }
 
-    .submit-btn:hover:not(:disabled) {
-        box-shadow: 2px 2px 0px #1a1515;
-        transform: translate(2px, 2px);
-    }
-
-    .submit-btn:disabled {
-        opacity: 0.55;
-        cursor: not-allowed;
+    @media (max-width: 768px) {
+        .form-grid { grid-template-columns: 1fr; }
+        .content-wrapper { padding: 24px; }
+        .side-rail { display: none; }
+        .page-title { font-size: 32px; }
     }
 </style>
 

@@ -1,14 +1,14 @@
 <script>
     let { book } = $props();
     let displayCover = $derived(book.cover_url || book.cover);
+    let readLink = $derived(
+        (book.type === "truyện tranh" || book.type === "comic" || book.type === "manga") 
+        ? `/read-comic/${book.id}` 
+        : `/read/${book.id}`
+    );
 </script>
 
-<a href="/read/{book.id}" class="book-item">
-    <div class="book-top-meta">
-        <span class="book-rating">★ {book.rating}</span>
-        <span class="book-chapters-count">{book.chapters} CH</span>
-    </div>
-
+<a href={readLink} class="book-item">
     <div class="book-cover-wrapper">
         <div class="book-cover-container">
             {#if displayCover}
@@ -25,10 +25,6 @@
     <div class="book-info">
         <h3 class="book-title">{book.title}</h3>
         <p class="book-author">{book.author}</p>
-    </div>
-
-    <div class="book-index">
-        Fig. {String(book.id || 1).padStart(3, '0')}
     </div>
 </a>
 
@@ -52,29 +48,6 @@
         background: var(--newsprint-surface);
         box-shadow: var(--shadow-hard);
         transform: translate(-2px, -2px);
-    }
-
-    .book-top-meta {
-        width: 100%;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        font-family: 'JetBrains Mono', monospace;
-        font-size: 10px;
-        font-weight: 600;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-        margin-bottom: 14px;
-        color: var(--newsprint-neutral-500);
-    }
-
-    .book-rating {
-        color: var(--newsprint-red);
-        font-weight: 700;
-    }
-
-    .book-chapters-count {
-        font-weight: 600;
     }
 
     .book-cover-wrapper {
@@ -157,18 +130,5 @@
         font-size: 13px;
         color: var(--newsprint-neutral-500);
         line-height: 1.4;
-    }
-
-    .book-index {
-        width: 100%;
-        font-family: 'JetBrains Mono', monospace;
-        font-size: 11px;
-        font-weight: 500;
-        color: var(--newsprint-neutral-400);
-        margin-top: 12px;
-        padding-top: 12px;
-        border-top: 1px solid var(--newsprint-divider);
-        text-transform: uppercase;
-        letter-spacing: 0.15em;
     }
 </style>

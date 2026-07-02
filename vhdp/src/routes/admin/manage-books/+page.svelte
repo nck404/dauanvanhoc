@@ -184,9 +184,14 @@
             {/if}
 
             {#if activeTab === 'books'}
-                <a href="/admin/add-book" class="modern-add-btn">
-                    <i class="bx bx-plus"></i> Thêm sách / truyện
-                </a>
+                <div class="book-add-buttons">
+                    <a href="/admin/add-book" class="modern-add-btn">
+                        <i class="bx bx-plus"></i> Thêm sách / truyện chữ
+                    </a>
+                    <a href="/admin/add-manga" class="modern-add-btn comic-add-btn">
+                        <i class="bx bx-image-add"></i> Thêm truyện tranh
+                    </a>
+                </div>
             {:else if activeTab === 'audios'}
                 <a href="/admin/add-audio" class="modern-add-btn">
                     <i class="bx bx-plus"></i> Thêm Audio mới
@@ -431,8 +436,19 @@
 
     .header-actions {
         display: flex;
+        gap: 1rem;
         align-items: center;
-        gap: 12px;
+    }
+    .book-add-buttons {
+        display: flex;
+        gap: 0.75rem;
+    }
+    .comic-add-btn {
+        background: var(--newsprint-blue, #2b6cb0) !important;
+        border-color: var(--newsprint-blue, #2b6cb0) !important;
+    }
+    .comic-add-btn:hover {
+        background: #2c5282 !important;
     }
 
     .modern-add-btn {

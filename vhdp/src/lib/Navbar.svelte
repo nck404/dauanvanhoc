@@ -2,10 +2,29 @@
     import { page } from "$app/state";
 
     let { user, activeTime = "", totalSaved = 0 } = $props();
+
+    let isReadPage = $derived(page.url.pathname.startsWith("/read") || page.url.pathname.startsWith("/read-comic"));
+    let isNavExpanded = $state(false);
+
+    $effect(() => {
+        let p = page.url.pathname;
+        isNavExpanded = false;
+    });
 </script>
 
-<nav class="masthead">
+{#if isReadPage && !isNavExpanded}
+    <button class="nav-pill-indicator" onclick={() => isNavExpanded = true}>
+        <div class="pill-line"></div>
+    </button>
+{/if}
+
+<nav class="masthead" class:is-read-mode={isReadPage && !isNavExpanded}>
     <div class="masthead-inner">
+        {#if isReadPage && isNavExpanded}
+            <button class="nav-close-btn" onclick={() => isNavExpanded = false}>
+                <i class="bx bx-x"></i>
+            </button>
+        {/if}
         <div class="masthead-top">
             <div class="edition-meta">
                 <span class="meta-item">Vol. 01</span>
@@ -62,6 +81,12 @@
                 {/if}
             </div>
             
+            <div class="nav-search-btn-wrap">
+                <button type="button" class="nav-search-btn" onclick={() => window.dispatchEvent(new CustomEvent('open-search'))} aria-label="Tìm kiếm">
+                    <i class="bx bx-search"></i>
+                </button>
+            </div>
+            
             <div class="stats-meta">
                 {#if activeTime}
                     <div class="stat-item">
@@ -86,10 +111,77 @@
         top: 0;
         left: 0;
         right: 0;
-        z-index: 40;
+        z-index: 2000;
         background: var(--newsprint-bg);
         border-bottom: 4px solid var(--newsprint-ink);
         box-shadow: 0 2px 0 0 rgba(17, 17, 17, 0.05);
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .masthead.is-read-mode {
+        transform: translateY(-100%);
+        pointer-events: none;
+        opacity: 0;
+    }
+
+    .nav-pill-indicator {
+        position: fixed;
+        bottom: 24px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 140px;
+        height: 32px;
+        background: rgba(15, 15, 15, 0.85);
+        backdrop-filter: blur(8px);
+        border: 1px solid rgba(255,255,255,0.1);
+        border-radius: 16px;
+        z-index: 2000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        padding: 0;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        transition: all 0.2s;
+    }
+
+    .nav-pill-indicator:hover {
+        background: rgba(25, 25, 25, 0.95);
+        transform: translateX(-50%) scale(1.05);
+    }
+
+    .pill-line {
+        width: 40px;
+        height: 4px;
+        background: rgba(255, 255, 255, 0.5);
+        border-radius: 2px;
+        transition: background 0.2s;
+    }
+
+    .nav-pill-indicator:hover .pill-line {
+        background: rgba(255, 255, 255, 0.8);
+    }
+
+    .nav-close-btn {
+        position: absolute;
+        top: 14px;
+        right: 24px;
+        background: transparent;
+        border: none;
+        color: var(--newsprint-ink);
+        font-size: 24px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 4px;
+        border-radius: 50%;
+        transition: background 0.2s;
+        z-index: 50;
+    }
+
+    .nav-close-btn:hover {
+        background: rgba(0,0,0,0.05);
     }
 
     .masthead-inner {
@@ -279,7 +371,43 @@
         color: var(--newsprint-neutral-500);
     }
 
+    .stats-meta {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        padding-left: 20px;
+        border-left: 2px solid var(--newsprint-ink);
+    }
+
+    .nav-search-btn-wrap {
+        display: inline-flex;
+        align-items: center;
+    }
+
+    .nav-search-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 44px;
+        height: 44px;
+        border: 2px solid var(--newsprint-ink);
+        background: var(--newsprint-white);
+        color: var(--newsprint-ink);
+        cursor: pointer;
+        transition: all 0.2s ease-out;
+        font-size: 18px;
+    }
+
+    .nav-search-btn:hover {
+        background: var(--newsprint-ink);
+        color: var(--newsprint-white);
+    }
+
     @media (max-width: 1024px) {
+        .nav-search-btn-wrap {
+            display: none;
+        }
+
         .stats-meta {
             display: none;
         }

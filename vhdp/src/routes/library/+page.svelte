@@ -22,7 +22,11 @@
     }
 
     onMount(() => {
+        document.body.classList.add("paper-theme");
         loadLibrary();
+        return () => {
+            document.body.classList.remove("paper-theme");
+        };
     });
 
     async function removeBookmark(bookId, e) {
@@ -45,95 +49,137 @@
     <title>Thư viện của tôi - Dấu Ấn Văn Học</title>
 </svelte:head>
 
-<div class="library-container">
-    <div class="header">
-        <div class="title-section">
-            <h2 class="gradient-text">Thư viện của bạn</h2>
-            <p class="subtitle">Nơi lưu giữ những câu chuyện bạn yêu thích</p>
+<div class="side-rail left">
+    <div class="rail-text">Dấu Ấn Văn Học — Thư Viện</div>
+</div>
+<div class="side-rail right">
+    <div class="rail-text">Vol. 01 / Số Nº 01 — MMXXVI</div>
+</div>
+
+<div class="page-container">
+    <header class="page-header">
+        <div class="header-label">
+            <span class="header-label-bar"></span>
+            <span>Thư viện cá nhân</span>
         </div>
+        
+        <h1 class="page-title">
+            Bộ sưu tập <em class="page-accent">tác phẩm</em> yêu thích<span class="page-dot">.</span>
+        </h1>
+        
+        <p class="page-lead">
+            Nơi lưu giữ những cuốn sách, truyện chữ và nội dung bạn đang theo dõi.
+        </p>
 
         <div class="filters">
             <button
-                class:active={activeFilter === "all"}
+                class="filter-btn {activeFilter === 'all' ? 'active' : ''}"
                 onclick={() => (activeFilter = "all")}
             >
-                Đã lưu ({bookmarkedBooks.length})
+                Tất cả ({bookmarkedBooks.length})
             </button>
         </div>
-    </div>
+    </header>
 
-    {#if loading}
-        <div style="text-align: center; padding: 40px; font-size: 16px;">Đang tải...</div>
-    {:else if bookmarkedBooks.length === 0}
-        <div class="empty-state">
-            <div class="empty-icon">
-                <i class="bx bx-bookmark-plus"></i>
-            </div>
-            <h3>Thư viện trống</h3>
-            <p>
-                Bạn chưa lưu cuốn sách nào. Hãy khám phá và tìm cho mình những
-                tác phẩm tâm đắc nhé!
-            </p>
-            <a href="/" class="explore-btn">Khám phá ngay</a>
+    <section class="content-section">
+        <div class="section-header">
+            <div class="section-count">{bookmarkedBooks.length} Tác phẩm đã lưu</div>
+            <div class="section-updated">Đồng bộ tự động</div>
         </div>
-    {:else}
+
         <div class="book-grid">
-            {#each bookmarkedBooks as book (book.id)}
-                <div class="book-item-wrapper">
-                    <a href="/read/{book.id}" class="book-link">
-                        <BookCard {book} />
-                    </a>
-
-                    <form
-                        onsubmit={(e) => removeBookmark(book.id, e)}
-                        class="remove-form"
-                    >
-                        <button
-                            type="submit"
-                            class="remove-btn"
-                            title="Xóa khỏi thư viện"
-                        >
-                            <i class="bx bxs-heart"></i>
-                        </button>
-                    </form>
+            {#if loading}
+                <div class="loading-state font-mono">Đang tải dữ liệu...</div>
+            {:else if bookmarkedBooks.length === 0}
+                <div class="empty empty--center">
+                    <div class="empty-symbol">§</div>
+                    <p>Thư viện của bạn đang trống. Hãy tìm cho mình một tác phẩm tâm đắc nhé.</p>
+                    <a href="/" class="newsprint-btn newsprint-btn--primary mt-4">Khám phá ngay</a>
                 </div>
-            {/each}
+            {:else}
+                {#each bookmarkedBooks as book (book.id)}
+                    <div class="book-item-wrapper newsprint-card hard-shadow-hover">
+                        <div class="book-link-wrapper">
+                            <BookCard {book} />
+                        </div>
+
+                        <form
+                            onsubmit={(e) => removeBookmark(book.id, e)}
+                            class="remove-form"
+                        >
+                            <button
+                                type="submit"
+                                class="remove-btn"
+                                title="Xóa khỏi thư viện"
+                            >
+                                <i class="bx bx-x"></i>
+                            </button>
+                        </form>
+                    </div>
+                {/each}
+            {/if}
         </div>
-    {/if}
+    </section>
 </div>
 
 <style>
-    .library-container {
-        max-width: 1200px;
+    .page-container {
+        max-width: 1280px;
         margin: 0 auto;
-        padding: 40px 20px 80px;
-        min-height: 70vh;
+        padding: 100px 24px 120px;
+    }
+    
+    .page-header {
+        padding: 60px 0 80px;
+        border-bottom: 4px solid var(--newsprint-ink);
+        margin-bottom: 60px;
     }
 
-    .header {
+    .header-label {
         display: flex;
-        justify-content: space-between;
-        align-items: flex-end;
-        margin-bottom: 50px;
-        gap: 20px;
+        align-items: center;
+        gap: 12px;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.25em;
+        color: var(--newsprint-red);
+        margin-bottom: 24px;
     }
 
-    .title-section h2 {
-        font-size: 36px;
-        font-weight: 800;
-        margin-bottom: 8px;
+    .header-label-bar {
+        width: 48px;
+        height: 2px;
+        background: var(--newsprint-red);
     }
 
-    .title-section :global(.gradient-text) {
-        background: linear-gradient(135deg, #e15b5b 0%, #1a1515 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
+    .page-title {
+        font-family: 'Playfair Display', serif;
+        font-weight: 900;
+        font-size: clamp(38px, 4.5vw, 64px);
+        line-height: 1.1;
+        letter-spacing: -0.025em;
+        color: var(--newsprint-ink);
+        margin-bottom: 24px;
     }
 
-    .subtitle {
-        color: var(--text-muted);
+    .page-title em {
+        font-style: italic;
+        color: var(--newsprint-red);
+    }
+
+    .page-dot {
+        color: #cc0000;
+    }
+
+    .page-lead {
+        font-family: 'Lora', serif;
         font-size: 16px;
+        line-height: 1.6;
+        color: var(--newsprint-neutral-600);
+        max-width: 44ch;
+        margin-bottom: 32px;
     }
 
     .filters {
@@ -141,132 +187,222 @@
         gap: 12px;
     }
 
-    .filters button {
-        padding: 10px 24px;
-        border-radius: 25px;
-        background: white;
-        font-size: 14px;
-        font-weight: 600;
-        border: 2px solid var(--accent-light);
-        color: var(--text-muted);
-        transition: all 0.3s ease;
+    .filter-btn {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 12px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        padding: 10px 20px;
+        background: transparent;
+        color: var(--newsprint-ink);
+        border: 2px solid var(--newsprint-ink);
         cursor: pointer;
+        transition: all 0.2s ease;
     }
 
-    .filters button.active {
-        background: var(--text-main);
-        color: white;
-        border-color: var(--text-main);
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    .filter-btn:hover {
+        background: var(--newsprint-ink);
+        color: var(--newsprint-white);
     }
 
+    .filter-btn.active {
+        background: var(--newsprint-red);
+        color: var(--newsprint-white);
+        border-color: var(--newsprint-red);
+        box-shadow: 4px 4px 0 rgba(0,0,0,1);
+        transform: translate(-2px, -2px);
+    }
+
+    .content-section {
+        margin-top: 60px;
+    }
+
+    .section-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-top: 2px solid var(--newsprint-ink);
+        padding-top: 16px;
+        margin-bottom: 32px;
+    }
+
+    .section-count {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.18em;
+        color: var(--newsprint-ink);
+    }
+
+    .section-updated {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.15em;
+        color: var(--newsprint-neutral-500);
+    }
+    
     .book-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
-        gap: 20px;
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+        gap: 24px;
     }
-
+    
     .book-item-wrapper {
         position: relative;
-        transition: transform 0.3s ease;
+        background: var(--newsprint-surface);
+        display: flex;
+        flex-direction: column;
     }
 
-    .book-item-wrapper:hover {
-        transform: translateY(-5px);
+    .book-link-wrapper {
+        flex: 1;
+    }
+    
+    .book-item-wrapper :global(.book-card) {
+        height: 100%;
+        border: none;
+        box-shadow: none;
     }
 
-    .book-link {
-        text-decoration: none;
-        color: inherit;
-        display: block;
+    .book-item-wrapper :global(.book-card:hover) {
+        transform: none;
+        box-shadow: none;
     }
 
     .remove-form {
         position: absolute;
-        top: 10px;
-        right: 10px;
+        top: -12px;
+        right: -12px;
         z-index: 10;
     }
 
     .remove-btn {
-        background: rgba(255, 255, 255, 0.9);
-        border: none;
-        width: 36px;
-        height: 36px;
-        border-radius: 50%;
+        background: var(--newsprint-white);
+        border: 2px solid var(--newsprint-ink);
+        width: 32px;
+        height: 32px;
         display: flex;
         align-items: center;
         justify-content: center;
-        color: #ef4444;
+        color: var(--newsprint-ink);
         font-size: 20px;
         cursor: pointer;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        box-shadow: 2px 2px 0 rgba(0,0,0,1);
         transition: all 0.2s ease;
     }
 
     .remove-btn:hover {
-        transform: scale(1.1);
-        background: #fff;
-        color: #dc2626;
+        transform: translate(-1px, -1px);
+        box-shadow: 3px 3px 0 var(--newsprint-red);
+        color: var(--newsprint-red);
+        border-color: var(--newsprint-red);
     }
 
-    .empty-state {
+    .empty {
+        grid-column: 1 / -1;
         text-align: center;
-        padding: 100px 20px;
-        background: white;
-        border-radius: 30px;
-        border: 2px dashed var(--accent-light);
+        padding: 60px 20px;
+        border: 2px dashed var(--newsprint-divider);
+        background: var(--newsprint-surface);
     }
 
-    .empty-icon {
-        font-size: 80px;
-        color: var(--accent-light);
-        margin-bottom: 20px;
+    .empty--center {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
     }
 
-    .empty-state h3 {
-        font-size: 24px;
-        margin-bottom: 12px;
-        color: var(--text-main);
+    .empty-symbol {
+        font-family: 'Playfair Display', serif;
+        font-size: 64px;
+        color: var(--newsprint-neutral-300);
+        line-height: 1;
     }
 
-    .empty-state p {
-        color: var(--text-muted);
-        max-width: 400px;
-        margin: 0 auto 30px;
-        line-height: 1.6;
+    .empty p {
+        font-family: 'Playfair Display', serif;
+        font-size: 16px;
+        color: var(--newsprint-neutral-500);
     }
-
-    .explore-btn {
-        display: inline-block;
-        padding: 14px 32px;
-        background: var(--primary-gradient);
-        color: white;
-        text-decoration: none;
-        border-radius: 15px;
-        font-weight: 700;
-        transition: all 0.3s ease;
-        box-shadow: 0 10px 20px rgba(225, 91, 91, 0.2);
+    
+    .loading-state {
+        grid-column: 1 / -1;
+        text-align: center;
+        padding: 60px;
+        font-size: 14px;
+        color: var(--newsprint-neutral-500);
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
     }
-
-    .explore-btn:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 15px 30px rgba(225, 91, 91, 0.3);
-    }
-
-    @media (max-width: 768px) {
-        .header {
-            flex-direction: column;
-            align-items: flex-start;
-        }
-
-        .title-section h2 {
-            font-size: 28px;
-        }
-
+    
+    @media (max-width: 1024px) {
         .book-grid {
-            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-            gap: 25px 15px;
+            grid-template-columns: repeat(3, 1fr);
+        }
+    }
+    
+    @media (max-width: 768px) {
+        .page-container {
+            padding: 80px 24px 100px;
+        }
+        
+        .book-grid {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+        }
+        
+        .page-title {
+            font-size: 32px;
+        }
+    }
+    
+    @media (max-width: 480px) {
+        .book-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .side-rail {
+        position: fixed;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 32px;
+        height: auto;
+        background: transparent;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 5;
+        pointer-events: none;
+    }
+    
+    .side-rail.left {
+        left: 20px;
+    }
+    
+    .side-rail.right {
+        right: 20px;
+    }
+    
+    .rail-text {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 9px;
+        font-weight: 700;
+        letter-spacing: 0.25em;
+        text-transform: uppercase;
+        color: var(--newsprint-neutral-400);
+        transform: rotate(-90deg);
+        white-space: nowrap;
+    }
+    
+    @media (max-width: 768px) {
+        .side-rail {
+            display: none;
         }
     }
 </style>

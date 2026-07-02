@@ -1,7 +1,7 @@
 <script>
     import { onMount } from "svelte";
 
-    let { selector = ".reveal", once = true, rootMargin = "0px 0px -40px 0px", children } = $props();
+    let { selector = ".reveal, .book-item, .section-header, .page-header, .newsprint-card, .audio-item, .result-item", once = true, rootMargin = "0px 0px -40px 0px", children } = $props();
 
     onMount(() => {
         const observer = new IntersectionObserver(

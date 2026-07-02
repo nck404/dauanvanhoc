@@ -96,6 +96,8 @@
     }
 
     onMount(async () => {
+        document.body.classList.add("paper-theme");
+        
         const loadScript = (src) =>
             new Promise((resolve) => {
                 const script = document.createElement("script");
@@ -126,30 +128,54 @@
         quill.on("text-change", () => {
             contentHtml = quill.root.innerHTML;
         });
+        
+        return () => {
+            document.body.classList.remove("paper-theme");
+        };
     });
 </script>
 
 <svelte:head>
+    <title>Thêm Ấn Phẩm Mới - Tòa Soạn</title>
     <link
         href="https://cdn.quilljs.com/1.3.6/quill.snow.css"
         rel="stylesheet"
     />
 </svelte:head>
 
-<div class="admin-page">
-    <header class="page-nav">
-        <a href="/admin" class="back-link"
-            ><i class="bx bx-left-arrow-alt"></i> Quay lại</a
-        >
-        <h2>Đăng nội dung mới</h2>
-    </header>
+<div class="side-rail left">
+    <div class="rail-text">Tòa Soạn — Ấn Phẩm</div>
+</div>
 
-    <div class="form-container">
+<div class="page-container">
+    <div class="header-action-row">
+        <a href="/admin" class="back-navigation-btn font-mono">
+            <i class="bx bx-left-arrow-alt"></i> Quay lại Tòa Soạn
+        </a>
+    </div>
+
+    <div class="content-wrapper newsprint-card hard-shadow">
+        <header class="form-header">
+            <div class="header-label">
+                <span class="header-label-bar"></span>
+                <span>Biên tập Nội dung</span>
+            </div>
+            
+            <h1 class="page-title">
+                Phát hành <em class="page-accent">Ấn phẩm mới</em><span class="page-dot">.</span>
+            </h1>
+            
+            <p class="page-lead">
+                Cập nhật tác phẩm văn học mới nhất vào kho dữ liệu, phục vụ độc giả đam mê truyện chữ và truyện tranh.
+            </p>
+        </header>
+
         {#if errorMsg}
-            <div class="error-banner" style="margin-bottom: 20px; padding: 12px; background: #fee2e2; color: #ef4444; border-radius: 8px;">{errorMsg}</div>
+            <div class="alert error font-mono">{errorMsg}</div>
         {/if}
+
         {#if successMsg}
-            <div class="success-banner" style="margin-bottom: 20px; padding: 12px; background: #dcfce7; color: #16a34a; border-radius: 8px;">{successMsg}</div>
+            <div class="alert success font-mono">{successMsg}</div>
         {/if}
 
         <form
@@ -157,36 +183,37 @@
             class="admin-form"
         >
             <div class="form-section">
-                <h3>Thông tin cơ bản</h3>
+                <h3 class="font-serif section-title">Thông tin cơ bản</h3>
                 <div class="input-grid">
                     <div class="field">
-                        <label for="title">Tiêu đề</label>
+                        <label for="title" class="font-mono">Tên tác phẩm *</label>
                         <input
                             type="text"
                             id="title"
                             name="title"
                             required
-                            placeholder="Tên tác phẩm..."
+                            placeholder="Ví dụ: Số Đỏ"
+                            class="newsprint-input"
                         />
                     </div>
                     <div class="field">
-                        <label for="author">Tác giả</label>
+                        <label for="author" class="font-mono">Tác giả *</label>
                         <input
                             type="text"
                             id="author"
                             name="author"
                             required
-                            placeholder="Tên tác giả..."
+                            placeholder="Ví dụ: Vũ Trọng Phụng"
+                            class="newsprint-input"
                         />
                     </div>
                 </div>
 
                 <div class="field">
-                    <label for="type">Loại nội dung</label>
-                    <select id="type" name="type" bind:value={bookType}>
+                    <label for="type" class="font-mono">Loại nội dung *</label>
+                    <select id="type" name="type" bind:value={bookType} class="newsprint-input">
                         <option value="text">Truyện chữ (Full Text)</option>
-                        <option value="manga">Truyện tranh (Manga/Comic)</option
-                        >
+                        <option value="manga">Truyện tranh (Manga/Comic)</option>
                         <option value="video">Video</option>
                         <option value="audio">Audio</option>
                         <option value="vn">Visual Novel</option>
@@ -194,17 +221,18 @@
                 </div>
 
                 <div class="field">
-                    <label for="category">Thể loại</label>
+                    <label for="category" class="font-mono">Thể loại</label>
                     <input
                         type="text"
                         id="category"
                         name="category"
-                        placeholder="Ví dụ: Tiên hiệp, Đô thị, Hành động..."
+                        placeholder="Ví dụ: Hiện thực phê phán, Xã hội..."
+                        class="newsprint-input"
                     />
                 </div>
 
                 <div class="field cover-field">
-                    <label>Ảnh bìa</label>
+                    <label class="font-mono">Ảnh bìa (Thumbnail)</label>
                     <div class="cover-options">
                         <div class="upload-box">
                             <input
@@ -221,37 +249,41 @@
                                     class="cover-preview"
                                 />
                             {:else}
-                                <div class="upload-placeholder">
+                                <div class="upload-placeholder font-mono">
                                     <i class="bx bx-cloud-upload"></i>
                                     <span>Tải ảnh lên</span>
                                 </div>
                             {/if}
                         </div>
                         <div class="url-box">
-                            <span>Hoặc dùng URL ảnh</span>
+                            <span class="font-mono">Hoặc sử dụng liên kết ảnh tĩnh (URL)</span>
                             <input
                                 type="url"
                                 id="cover_url"
                                 name="cover_url"
                                 placeholder="https://..."
+                                class="newsprint-input"
                             />
                         </div>
                     </div>
                 </div>
 
                 <div class="field">
-                    <label for="description">Mô tả tóm tắt</label>
+                    <label for="description" class="font-mono">Tóm tắt / Lời tựa</label>
                     <textarea
                         id="description"
                         name="description"
                         rows="3"
-                        placeholder="Viết vài dòng giới thiệu..."
+                        placeholder="Viết vài dòng giới thiệu về tác phẩm..."
+                        class="newsprint-input"
                     ></textarea>
                 </div>
 
                 <div class="field" style="margin-bottom: 60px;">
-                    <label>Nội dung (Chương 1)</label>
-                    <div bind:this={editorContainer} class="editor-wrap"></div>
+                    <label class="font-mono">Nội dung Văn bản (Chương 1) *</label>
+                    <div class="editor-wrapper">
+                        <div bind:this={editorContainer} class="quill-editor font-serif"></div>
+                    </div>
                     <input
                         type="hidden"
                         name="content"
@@ -260,94 +292,174 @@
                 </div>
             </div>
 
-            {#if errorMsg}
-                <p class="error">{errorMsg}</p>
-            {/if}
-
-            <button type="submit" class="comic-btn comic-btn--red comic-btn--lg submit-btn" disabled={loading}>
-                {loading ? "Đang đăng..." : "Tạo tác phẩm"}
-            </button>
+            <div class="form-actions">
+                <button type="submit" class="newsprint-btn newsprint-btn--primary" disabled={loading}>
+                    <i class="bx bx-book-add"></i> {loading ? "Đang xuất bản..." : "Xuất bản Tác phẩm"}
+                </button>
+            </div>
         </form>
     </div>
 </div>
 
 <style>
-    .admin-page {
-        max-width: 900px;
+    .page-container {
+        max-width: 1000px;
         margin: 0 auto;
-        padding: 40px 20px;
+        padding: 60px 24px 120px;
     }
 
-    .page-nav {
-        display: flex;
-        align-items: center;
-        gap: 20px;
-        margin-bottom: 32px;
+    .header-action-row {
+        margin-bottom: 24px;
     }
 
-    .back-link {
-        color: var(--text-muted);
-        display: flex;
+    .back-navigation-btn {
+        display: inline-flex;
         align-items: center;
-        gap: 4px;
-        font-weight: 500;
+        gap: 6px;
+        font-weight: 700;
+        color: var(--newsprint-ink);
+        text-transform: uppercase;
+        font-size: 11px;
+        letter-spacing: 0.1em;
         text-decoration: none;
     }
 
-    .form-container {
-        background: white;
-        padding: 40px;
+    .back-navigation-btn:hover {
+        color: var(--newsprint-red);
     }
 
-    .form-section h3 {
-        font-size: 18px;
+    .content-wrapper {
+        padding: 40px 48px;
+        background: var(--newsprint-white);
+    }
+
+    .form-header {
+        margin-bottom: 40px;
+        border-bottom: 2px solid var(--newsprint-ink);
+        padding-bottom: 30px;
+    }
+
+    .header-label {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.25em;
+        color: var(--newsprint-red);
+        margin-bottom: 16px;
+    }
+
+    .header-label-bar {
+        width: 32px;
+        height: 2px;
+        background: var(--newsprint-red);
+    }
+
+    .page-title {
+        font-family: 'Playfair Display', serif;
+        font-weight: 900;
+        font-size: 42px;
+        line-height: 1.1;
+        color: var(--newsprint-ink);
+        margin-bottom: 12px;
+    }
+
+    .page-title em {
+        font-style: italic;
+        color: var(--newsprint-red);
+    }
+
+    .page-dot {
+        color: var(--newsprint-red);
+    }
+
+    .page-lead {
+        font-family: 'Lora', serif;
+        font-size: 15px;
+        color: var(--newsprint-neutral-600);
+        max-width: 60ch;
+    }
+
+    .alert {
+        padding: 12px 16px;
+        font-size: 12px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
         margin-bottom: 24px;
-        padding-bottom: 12px;
-        border-bottom: 2px solid var(--accent-light);
-        color: var(--accent-dark);
+        border: 2px solid var(--newsprint-ink);
+    }
+
+    .alert.error {
+        background: var(--newsprint-white);
+        color: var(--newsprint-red);
+        border-color: var(--newsprint-red);
+        box-shadow: 4px 4px 0 var(--newsprint-red);
+    }
+
+    .alert.success {
+        background: var(--newsprint-ink);
+        color: var(--newsprint-white);
+        border-color: var(--newsprint-ink);
+        box-shadow: 4px 4px 0 var(--newsprint-ink);
+    }
+    
+    .section-title {
+        font-size: 24px;
+        font-weight: 800;
+        color: var(--newsprint-ink);
+        margin-bottom: 24px;
+        border-left: 4px solid var(--newsprint-red);
+        padding-left: 12px;
     }
 
     .input-grid {
         display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 20px;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 24px;
+        margin-bottom: 24px;
     }
 
     .field {
         margin-bottom: 24px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
     }
 
-    .field label {
-        display: block;
-        font-size: 14px;
-        font-weight: 600;
-        margin-bottom: 8px;
-        color: var(--text-main);
+    label {
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: var(--newsprint-ink);
     }
 
-    .field input,
-    .field select,
-    .field textarea {
-        width: 100%;
+    .newsprint-input {
         padding: 12px 16px;
-        border: 2px solid var(--accent-light);
-        border-radius: 12px;
-        font-family: inherit;
-        font-size: 15px;
-        outline: none;
-        transition: border-color 0.3s ease;
+        border: 2px solid var(--newsprint-ink);
+        background: var(--newsprint-surface);
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 13px;
+        color: var(--newsprint-ink);
+        transition: all 0.2s;
+        width: 100%;
     }
 
-    .field input:focus,
-    .field select:focus,
-    .field textarea:focus {
-        border-color: var(--accent-dark);
+    .newsprint-input:focus {
+        outline: none;
+        background: var(--newsprint-white);
+        box-shadow: 4px 4px 0 var(--newsprint-ink);
+        transform: translate(-2px, -2px);
     }
 
     /* Cover Styling */
     .cover-options {
         display: flex;
-        gap: 20px;
+        gap: 24px;
         align-items: flex-start;
     }
 
@@ -355,10 +467,17 @@
         position: relative;
         width: 140px;
         height: 200px;
-        border: 2px dashed var(--accent-light);
-        border-radius: 12px;
+        border: 2px dashed var(--newsprint-ink);
+        background: var(--newsprint-surface);
         overflow: hidden;
         cursor: pointer;
+        transition: all 0.2s;
+    }
+    
+    .upload-box:hover {
+        background: var(--newsprint-white);
+        box-shadow: 4px 4px 0 var(--newsprint-ink);
+        transform: translate(-2px, -2px);
     }
 
     .upload-box input {
@@ -375,12 +494,16 @@
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        color: var(--text-muted);
+        color: var(--newsprint-neutral-400);
         gap: 8px;
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
     }
 
     .upload-placeholder i {
         font-size: 32px;
+        color: var(--newsprint-red);
     }
 
     .cover-preview {
@@ -393,76 +516,76 @@
         flex: 1;
         display: flex;
         flex-direction: column;
-        gap: 8px;
+        gap: 12px;
     }
 
     .url-box span {
-        font-size: 13px;
-        color: var(--text-muted);
-        font-style: italic;
+        font-size: 11px;
+        color: var(--newsprint-neutral-600);
     }
 
-    .editor-wrap {
-        height: 400px;
-        background: white;
-        border-radius: 0 0 12px 12px;
-        border-color: var(--accent-light);
+    .editor-wrapper {
+        border: 2px solid var(--newsprint-ink);
+        background: var(--newsprint-white);
     }
 
-    /* Style for Quill Editor inside Svelte */
-    :global(.ql-toolbar) {
-        border-radius: 12px 12px 0 0 !important;
-        border-color: var(--accent-light) !important;
-        background: #fafafa;
+    .quill-editor {
+        min-height: 400px;
+        font-size: 16px;
     }
-    :global(.ql-container) {
-        border-radius: 0 0 12px 12px !important;
-        border-color: var(--accent-light) !important;
-        font-size: 16px !important;
-        font-family: inherit !important;
+    
+    :global(.ql-toolbar.ql-snow) {
+        border: none !important;
+        border-bottom: 2px solid var(--newsprint-ink) !important;
+        font-family: 'JetBrains Mono', monospace;
     }
-    :global(.ql-editor) {
-        min-height: 350px;
+    
+    :global(.ql-container.ql-snow) {
+        border: none !important;
     }
 
-    .submit-btn {
-        width: 100%;
-        padding: 16px;
+    .form-actions {
+        margin-top: 32px;
+        display: flex;
+        justify-content: flex-end;
+        border-top: 2px solid var(--newsprint-divider);
+        padding-top: 24px;
+    }
+
+    .side-rail {
+        position: fixed;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 32px;
+        height: auto;
+        background: transparent;
         display: flex;
         align-items: center;
         justify-content: center;
-        gap: 8px;
-        margin-top: 16px;
+        z-index: 5;
+        pointer-events: none;
+    }
+    
+    .side-rail.left { left: 20px; }
+    
+    .rail-text {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 9px;
+        font-weight: 700;
+        letter-spacing: 0.25em;
+        text-transform: uppercase;
+        color: var(--newsprint-neutral-400);
+        transform: rotate(-90deg);
+        white-space: nowrap;
     }
 
-    .submit-btn:hover:not(:disabled) {
-        box-shadow: 2px 2px 0px #1a1515;
-        transform: translate(2px, 2px);
-    }
-
-    .submit-btn:disabled {
-        opacity: 0.55;
-        cursor: not-allowed;
-    }
-
-    .error {
-        color: #e15b5b;
-        margin-top: 16px;
-        font-weight: 600;
-        text-align: center;
-    }
-
-    @media (max-width: 600px) {
-        .input-grid {
-            grid-template-columns: 1fr;
-        }
-        .cover-options {
-            flex-direction: column;
-        }
-        .upload-box {
-            width: 100%;
-            height: 250px;
-        }
+    @media (max-width: 768px) {
+        .input-grid { grid-template-columns: 1fr; }
+        .cover-options { flex-direction: column; }
+        .upload-box { width: 100%; height: 250px; }
+        .content-wrapper { padding: 24px; }
+        .side-rail { display: none; }
+        .page-title { font-size: 32px; }
     }
 </style>
 

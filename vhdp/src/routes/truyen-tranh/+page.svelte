@@ -19,7 +19,7 @@
     onMount(async () => {
         document.body.classList.add("paper-theme");
         try {
-            const res = await apiFetch("/api/books?type=" + encodeURIComponent("truyện tranh"));
+            const res = await apiFetch("/api/books?type=" + encodeURIComponent("truyện tranh") + "&limit=999");
             if (res.ok) {
                 const data = await res.json();
                 books = data.books || [];
@@ -51,51 +51,48 @@
 </div>
 
 <div class="page-container">
-    <header class="header-section">
-        <div class="header-meta font-mono text-[10px] uppercase tracking-[0.2em] text-neutral-500 mb-6 pb-3 border-b border-neutral-200">
-            <span>Section II</span>
-            <span class="mx-3">|</span>
+    <header class="page-header">
+        <div class="header-label">
+            <span class="header-label-bar"></span>
             <span>Truyện Tranh</span>
         </div>
         
-        <h1 class="font-serif font-black text-4xl sm:text-5xl lg:text-7xl leading-[0.95] tracking-tighter text-[#111111] mb-6">
-            Kho tàng <span class="italic text-[#CC0000]">truyện tranh</span> địa phương<span class="text-[#CC0000]">.</span>
+        <h1 class="page-title">
+            Kho tàng <em class="page-accent">truyện tranh</em> địa phương<span class="page-dot">.</span>
         </h1>
         
-        <p class="lead font-body text-base sm:text-lg leading-relaxed text-neutral-600 max-w-[55ch] mb-8">
+        <p class="page-lead">
             Tuyển tập truyện tranh, ký họa và tranh dân gian đặc sắc được số hóa chất lượng cao.
         </p>
 
-        <div class="search-bar flex items-center gap-3 border-b-2 border-[#111111] pb-3 max-w-[600px]">
-            <i class="bx bx-search text-[#CC0000] text-xl"></i>
+        <div class="editorial-search">
+            <i class="bx bx-search editorial-search-icon"></i>
             <input
                 type="text"
                 placeholder="Tìm kiếm tác phẩm hoặc tác giả..."
                 bind:value={searchQuery}
-                class="newsprint-input"
+                class="editorial-search-input"
             />
+            <button class="editorial-search-btn">Tìm kiếm</button>
         </div>
     </header>
 
-    <section class="content-section mt-16">
-        <div class="section-header flex items-center justify-between border-t-2 border-[#111111] pt-4 mb-8">
-            <div class="font-mono text-xs uppercase tracking-[0.18em] font-bold text-[#111111]">
-                {filteredBooks.length} Tác phẩm
-            </div>
-            <div class="font-mono text-xs uppercase tracking-widest text-neutral-500">
-                Cập nhật liên tục
-            </div>
+    <section class="content-section">
+        <div class="section-header">
+            <div class="section-count">{filteredBooks.length} Tác phẩm</div>
+            <div class="small-ornament">✧✧✧✧</div>
+            <div class="section-updated">Cập nhật liên tục</div>
         </div>
 
-        <div class="book-grid grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+        <div class="book-grid">
             {#if !loaded}
-                {#each Array(SKELETON_COUNT).fill(0) as _, i}
+                {#each Array(SKELETON_COUNT).fill(0) as _}
                     <SkeletonCard type="book" />
                 {/each}
             {:else if filteredBooks.length === 0}
-                <div class="empty col-span-full text-center py-16 border border-dashed border-neutral-300">
-                    <div class="font-serif text-6xl text-neutral-200 mb-4">§</div>
-                    <p class="font-serif text-lg text-neutral-400">Không tìm thấy tác phẩm truyện tranh nào</p>
+                <div class="empty empty--center">
+                    <div class="empty-symbol">§</div>
+                    <p>Không tìm thấy tác phẩm truyện tranh nào</p>
                 </div>
             {:else}
                 {#each filteredBooks as book}
@@ -145,10 +142,136 @@
         margin: 0 auto;
         padding: 100px 24px 120px;
     }
-    
-    .header-section {
-        margin-bottom: 60px;
-        position: relative;
+
+    .page-header {
+        padding: 60px 0 80px;
+        border-bottom: 4px solid var(--newsprint-ink);
+        margin-bottom: 30px;
+    }
+
+    .header-label {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.25em;
+        color: var(--newsprint-red);
+        margin-bottom: 24px;
+    }
+
+    .header-label-bar {
+        width: 48px;
+        height: 2px;
+        background: var(--newsprint-red);
+    }
+
+    .page-title {
+        font-family: 'Playfair Display', serif;
+        font-weight: 900;
+        font-size: clamp(38px, 4.5vw, 64px);
+        line-height: 1.1;
+        letter-spacing: -0.025em;
+        color: var(--newsprint-ink);
+        margin-bottom: 24px;
+    }
+
+    .page-title em {
+        font-style: italic;
+        color: var(--newsprint-red);
+    }
+
+    .page-dot {
+        color: #cc0000;
+    }
+
+    .page-lead {
+        font-family: 'Lora', serif;
+        font-size: 16px;
+        line-height: 1.6;
+        color: var(--newsprint-neutral-600);
+        max-width: 44ch;
+        margin-bottom: 32px;
+    }
+
+    .search-wrapper {
+        border: 2px solid var(--newsprint-ink);
+    }
+
+    .small-ornament {
+        text-align: center;
+        font-family: 'Playfair Display', serif;
+        font-size: 16px;
+        letter-spacing: 0.1em;
+        color: var(--newsprint-red);
+        padding: 0;
+        margin: 0;
+    }
+
+    .content-section {
+        margin-top: 20px;
+    }
+
+    .section-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding-top: 16px;
+        margin-bottom: 32px;
+    }
+
+    .section-count {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 13px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.18em;
+        color: var(--newsprint-ink);
+    }
+
+    .section-updated {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 13px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.15em;
+        color: var(--newsprint-neutral-500);
+    }
+
+    .book-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+        gap: 24px;
+    }
+
+    .empty {
+        grid-column: 1 / -1;
+        text-align: center;
+        padding: 60px 20px;
+        border: 2px dashed var(--newsprint-divider);
+        background: var(--newsprint-surface);
+    }
+
+    .empty--center {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .empty-symbol {
+        font-family: 'Playfair Display', serif;
+        font-size: 64px;
+        color: var(--newsprint-neutral-300);
+        line-height: 1;
+    }
+
+    .empty p {
+        font-family: 'Playfair Display', serif;
+        font-size: 16px;
+        color: var(--newsprint-neutral-500);
     }
     
     @media (max-width: 768px) {
@@ -157,6 +280,10 @@
         }
         .side-rail {
             display: none;
+        }
+
+        .page-title {
+            font-size: 32px;
         }
     }
 </style>
