@@ -104,10 +104,28 @@
             });
 
             if (res.ok) {
+                const result = await res.json();
+                const newReplyObj = {
+                    id: result.id,
+                    user_id: currentUser.id,
+                    content: replyContent,
+                    media_url: selectedImageUrl || null,
+                    parent_id: postId,
+                    created_at: new Date().toISOString(),
+                    username: currentUser.username,
+                    name: currentUser.name || currentUser.username,
+                    image: currentUser.image || null,
+                    likes_count: 0,
+                    replies_count: 0,
+                    is_liked: 0
+                };
+                replies = [...replies, newReplyObj];
+                if (post) {
+                    post.replies_count += 1;
+                }
                 replyContent = "";
                 selectedImageUrl = "";
                 replyError = "";
-                await loadPostDetail();
             } else {
                 const data = await res.json();
                 replyError = data.error || "Không thể gửi phản hồi";

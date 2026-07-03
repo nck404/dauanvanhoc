@@ -256,6 +256,40 @@ async function initDatabase(client) {
       FOREIGN KEY (thread_id) REFERENCES threads(id) ON DELETE CASCADE
     )
   `);
+
+  await client.execute(`
+    CREATE TABLE IF NOT EXISTS audio_favorites (
+      user_id TEXT NOT NULL,
+      audio_id INTEGER NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (user_id, audio_id),
+      FOREIGN KEY (user_id) REFERENCES user(id) ON DELETE CASCADE,
+      FOREIGN KEY (audio_id) REFERENCES audios(id) ON DELETE CASCADE
+    )
+  `);
+
+  await client.execute(`
+    CREATE TABLE IF NOT EXISTS video_favorites (
+      user_id TEXT NOT NULL,
+      video_id INTEGER NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (user_id, video_id),
+      FOREIGN KEY (user_id) REFERENCES user(id) ON DELETE CASCADE,
+      FOREIGN KEY (video_id) REFERENCES videos(id) ON DELETE CASCADE
+    )
+  `);
+
+  await client.execute(`
+    CREATE TABLE IF NOT EXISTS video_comments (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id TEXT NOT NULL,
+      video_id INTEGER NOT NULL,
+      content TEXT NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES user(id) ON DELETE CASCADE,
+      FOREIGN KEY (video_id) REFERENCES videos(id) ON DELETE CASCADE
+    )
+  `);
 }
 
 function handleCors(request) {
@@ -808,7 +842,7 @@ export default {
         let isBookmarked = false;
         if (sessionUser) {
           const bookmarkRes = await client.execute({
-            sql: "SELECT 1 FROM bookmarks WHERE user_id = ? AND book_id = ? AND chapter_id IS NULL LIMIT 1",
+            sql: "SELECT 1 FROM audio_favorites WHERE user_id = ? AND audio_id = ? LIMIT 1",
             args: [sessionUser.id, audioId]
           });
           isBookmarked = bookmarkRes.rows.length > 0;
@@ -825,19 +859,19 @@ export default {
           return respondJson({ error: "Unauthorized" }, 401);
         }
         const existing = await client.execute({
-          sql: "SELECT 1 FROM bookmarks WHERE user_id = ? AND book_id = ? AND chapter_id IS NULL LIMIT 1",
+          sql: "SELECT 1 FROM audio_favorites WHERE user_id = ? AND audio_id = ? LIMIT 1",
           args: [sessionUser.id, audioId]
         });
 
         if (existing.rows.length > 0) {
           await client.execute({
-            sql: "DELETE FROM bookmarks WHERE user_id = ? AND book_id = ? AND chapter_id IS NULL",
+            sql: "DELETE FROM audio_favorites WHERE user_id = ? AND audio_id = ?",
             args: [sessionUser.id, audioId]
           });
           return respondJson({ success: true, isBookmarked: false, message: "Đã xóa khỏi thư viện" });
         } else {
           await client.execute({
-            sql: "INSERT INTO bookmarks (user_id, book_id, chapter_id) VALUES (?, ?, NULL)",
+            sql: "INSERT INTO audio_favorites (user_id, audio_id) VALUES (?, ?)",
             args: [sessionUser.id, audioId]
           });
           return respondJson({ success: true, isBookmarked: true, message: "Đã thêm vào thư viện" });
@@ -921,7 +955,7 @@ export default {
         let isBookmarked = false;
         if (sessionUser) {
           const bookmarkRes = await client.execute({
-            sql: "SELECT 1 FROM bookmarks WHERE user_id = ? AND book_id = ? AND chapter_id IS NULL LIMIT 1",
+            sql: "SELECT 1 FROM video_favorites WHERE user_id = ? AND video_id = ? LIMIT 1",
             args: [sessionUser.id, videoId]
           });
           isBookmarked = bookmarkRes.rows.length > 0;
@@ -944,19 +978,19 @@ export default {
           return respondJson({ error: "Unauthorized" }, 401);
         }
         const existing = await client.execute({
-          sql: "SELECT 1 FROM bookmarks WHERE user_id = ? AND book_id = ? AND chapter_id IS NULL LIMIT 1",
+          sql: "SELECT 1 FROM video_favorites WHERE user_id = ? AND video_id = ? LIMIT 1",
           args: [sessionUser.id, videoId]
         });
 
         if (existing.rows.length > 0) {
           await client.execute({
-            sql: "DELETE FROM bookmarks WHERE user_id = ? AND book_id = ? AND chapter_id IS NULL",
+            sql: "DELETE FROM video_favorites WHERE user_id = ? AND video_id = ?",
             args: [sessionUser.id, videoId]
           });
           return respondJson({ success: true, isBookmarked: false, message: "Đã xóa khỏi thư viện" });
         } else {
           await client.execute({
-            sql: "INSERT INTO bookmarks (user_id, book_id, chapter_id) VALUES (?, ?, NULL)",
+            sql: "INSERT INTO video_favorites (user_id, video_id) VALUES (?, ?)",
             args: [sessionUser.id, videoId]
           });
           return respondJson({ success: true, isBookmarked: true, message: "Đã thêm vào thư viện" });
@@ -992,6 +1026,45 @@ export default {
         });
         return respondJson({ success: true });
       }
+
+      const pathParts = url.pathname.split("/");
+      if (pathParts[4] === "comments") {
+        if (request.method === "GET") {
+          const commentsRes = await client.execute({
+            sql: `SELECT c.id, c.content, c.created_at, u.username, u.name, u.image
+                  FROM video_comments c
+                  JOIN user u ON c.user_id = u.id
+                  WHERE c.video_id = ?
+                  ORDER BY c.created_at DESC`,
+            args: [videoId]
+          });
+          return respondJson({ comments: commentsRes.rows });
+        }
+
+        if (request.method === "POST") {
+          if (!sessionUser) {
+            return respondJson({ error: "Unauthorized" }, 401);
+          }
+          const data = await request.json();
+          const content = data.content || "";
+          if (!content.trim()) {
+            return respondJson({ error: "Content cannot be empty" }, 400);
+          }
+          const res = await client.execute({
+            sql: "INSERT INTO video_comments (user_id, video_id, content) VALUES (?, ?, ?)",
+            args: [sessionUser.id, videoId, content]
+          });
+          const insertedId = Number(res.lastInsertRowid);
+          const commentRes = await client.execute({
+            sql: `SELECT c.id, c.content, c.created_at, u.username, u.name, u.image
+                  FROM video_comments c
+                  JOIN user u ON c.user_id = u.id
+                  WHERE c.id = ? LIMIT 1`,
+            args: [insertedId]
+          });
+          return respondJson({ success: true, comment: commentRes.rows[0] });
+        }
+      }
     }
 
     if (url.pathname === "/api/library" && request.method === "GET") {
@@ -999,14 +1072,34 @@ export default {
         return respondJson({ error: "Unauthorized" }, 401);
       }
       const bookmarksRes = await client.execute({
-        sql: `SELECT b.id, b.title, b.author, b.cover_url, b.description, b.category, bm.created_at as bookmarked_at
+        sql: `SELECT b.id, b.title, b.author, b.cover_url, b.description, b.category, b.type, bm.created_at as bookmarked_at
               FROM bookmarks bm
               JOIN books b ON bm.book_id = b.id
               WHERE bm.user_id = ?
               ORDER BY bm.created_at DESC`,
         args: [sessionUser.id]
       });
-      return respondJson({ bookmarkedBooks: bookmarksRes.rows });
+      const audiosRes = await client.execute({
+        sql: `SELECT a.id, a.title, a.author, a.cover_url, a.audio_url, af.created_at as bookmarked_at
+              FROM audio_favorites af
+              JOIN audios a ON af.audio_id = a.id
+              WHERE af.user_id = ?
+              ORDER BY af.created_at DESC`,
+        args: [sessionUser.id]
+      });
+      const videosRes = await client.execute({
+        sql: `SELECT v.id, v.title, v.author, v.cover_url, v.video_url, v.description, vf.created_at as bookmarked_at
+              FROM video_favorites vf
+              JOIN videos v ON vf.video_id = v.id
+              WHERE vf.user_id = ?
+              ORDER BY vf.created_at DESC`,
+        args: [sessionUser.id]
+      });
+      return respondJson({
+        bookmarkedBooks: bookmarksRes.rows,
+        bookmarkedAudios: audiosRes.rows,
+        bookmarkedVideos: videosRes.rows
+      });
     }
 
     if (url.pathname === "/api/library" && request.method === "DELETE") {
@@ -1014,15 +1107,28 @@ export default {
         return respondJson({ error: "Unauthorized" }, 401);
       }
       const data = await request.json();
-      const bookId = parseInt(data.bookId);
-      if (isNaN(bookId)) {
-        return respondJson({ error: "Invalid Book ID" }, 400);
+      const id = parseInt(data.id || data.bookId);
+      const type = data.type || "book";
+      if (isNaN(id)) {
+        return respondJson({ error: "Invalid ID" }, 400);
       }
 
-      await client.execute({
-        sql: "DELETE FROM bookmarks WHERE user_id = ? AND book_id = ?",
-        args: [sessionUser.id, bookId]
-      });
+      if (type === "audio") {
+        await client.execute({
+          sql: "DELETE FROM audio_favorites WHERE user_id = ? AND audio_id = ?",
+          args: [sessionUser.id, id]
+        });
+      } else if (type === "video") {
+        await client.execute({
+          sql: "DELETE FROM video_favorites WHERE user_id = ? AND video_id = ?",
+          args: [sessionUser.id, id]
+        });
+      } else {
+        await client.execute({
+          sql: "DELETE FROM bookmarks WHERE user_id = ? AND book_id = ?",
+          args: [sessionUser.id, id]
+        });
+      }
       return respondJson({ success: true });
     }
 

@@ -20,6 +20,8 @@
     let lineHeight = $state(1.8);
 
     let paginatedContent = $state([]);
+    let currentPage = $state(1);
+    let totalPages = $state(1);
     let handleResizeFn;
 
 
@@ -100,7 +102,65 @@
             tempDiv.innerHTML = hasHtml 
                 ? chapter.content 
                 : chapter.content.split(/\n+/).map(p => `<p>${p.trim()}</p>`).join("");
-            const nodes = Array.from(tempDiv.childNodes);
+            
+            const rawNodes = Array.from(tempDiv.childNodes);
+            const nodes = [];
+
+            for (const rNode of rawNodes) {
+                if (rNode.nodeType === 1 && rNode.tagName.toLowerCase() === "p") {
+                    const text = rNode.innerHTML;
+                    if (text.length > 350) {
+                        const sentences = text.match(/[^.!?]+[.!?]+(\s|$)/g) || [text];
+                        let currentChunk = "";
+                        for (const sentence of sentences) {
+                            if ((currentChunk + sentence).length > 300) {
+                                if (currentChunk.trim()) {
+                                    const pNode = document.createElement("p");
+                                    pNode.innerHTML = currentChunk.trim();
+                                    nodes.push(pNode);
+                                }
+                                currentChunk = sentence;
+                            } else {
+                                currentChunk += sentence;
+                            }
+                        }
+                        if (currentChunk.trim()) {
+                            const pNode = document.createElement("p");
+                            pNode.innerHTML = currentChunk.trim();
+                            nodes.push(pNode);
+                        }
+                    } else {
+                        nodes.push(rNode);
+                    }
+                } else if (rNode.nodeType === 3) {
+                    const text = rNode.textContent;
+                    if (text.trim().length > 350) {
+                        const sentences = text.match(/[^.!?]+[.!?]+(\s|$)/g) || [text];
+                        let currentChunk = "";
+                        for (const sentence of sentences) {
+                            if ((currentChunk + sentence).length > 300) {
+                                if (currentChunk.trim()) {
+                                    const pNode = document.createElement("p");
+                                    pNode.textContent = currentChunk.trim();
+                                    nodes.push(pNode);
+                                }
+                                currentChunk = sentence;
+                            } else {
+                                currentChunk += sentence;
+                            }
+                        }
+                        if (currentChunk.trim()) {
+                            const pNode = document.createElement("p");
+                            pNode.textContent = currentChunk.trim();
+                            nodes.push(pNode);
+                        }
+                    } else if (text.trim()) {
+                        nodes.push(rNode);
+                    }
+                } else {
+                    nodes.push(rNode);
+                }
+            }
 
             let currentPageHTML = "";
             let isFirstSubPage = true;
@@ -148,6 +208,7 @@
         allPages.push({ type: "hard", title: "Hết", sub: "Cảm ơn bạn đã đọc" });
 
         paginatedContent = allPages;
+        totalPages = allPages.length;
         await tick();
         initBook();
     }
@@ -169,6 +230,9 @@
                     window.$(flipbookElement).turn("destroy");
                 }
 
+                const savedPage = browser && book ? (parseInt(localStorage.getItem(`vhdp_progress_book_${book.id}`)) || 1) : 1;
+                currentPage = savedPage;
+
                 const w = window.innerWidth;
                 let displayMode = w < 768 ? "single" : "double";
                 let bookWidth = displayMode === "single" ? 600 : 1200;
@@ -181,8 +245,15 @@
                     gradients: true,
                     autoCenter: true,
                     duration: 1000,
-                    page: 1,
+                    page: savedPage,
                     display: displayMode
+                });
+
+                window.$(flipbookElement).bind("turned", function(event, page, view) {
+                    currentPage = page;
+                    if (browser && book) {
+                        localStorage.setItem(`vhdp_progress_book_${book.id}`, page);
+                    }
                 });
 
                 // Add robust click handlers for turning pages in case CSS scaling breaks hitboxes
@@ -364,6 +435,8 @@
         <div bind:this={measureElement} class="measure-layer" style="--fz: {fontSize}px; --lh: {lineHeight};"></div>
 
         <div class="reader-container">
+            <div class="progress-bar-top" style="width: {(currentPage / totalPages) * 100}%"></div>
+
             <a href="/library" class="floating-btn back" title="Quay lại">
                 <i class="bx bx-left-arrow-alt"></i>
             </a>
@@ -430,6 +503,26 @@
                         <p>Đang dàn trang sách...</p>
                     </div>
                 {/if}
+            </div>
+
+            <div class="reader-footer-bar">
+                <button class="nav-btn" onclick={() => window.$(flipbookElement).turn("previous")} disabled={currentPage <= 1}>
+                    <i class="bx bx-chevron-left"></i>
+                </button>
+                <div class="progress-info">
+                    <span class="progress-text">Trang {currentPage} / {totalPages}</span>
+                    <input 
+                        type="range" 
+                        min="1" 
+                        max={totalPages} 
+                        value={currentPage} 
+                        oninput={(e) => window.$(flipbookElement).turn("page", parseInt(e.target.value))} 
+                        class="page-slider"
+                    />
+                </div>
+                <button class="nav-btn" onclick={() => window.$(flipbookElement).turn("next")} disabled={currentPage >= totalPages}>
+                    <i class="bx bx-chevron-right"></i>
+                </button>
             </div>
         </div>
 
@@ -1146,5 +1239,73 @@
             right: 16px;
             top: 16px;
         }
+    }
+
+    .progress-bar-top {
+        position: fixed;
+        top: 0;
+        left: 0;
+        height: 4px;
+        background: var(--coral, #ed6f5c);
+        z-index: 1001;
+        transition: width 0.3s ease;
+    }
+
+    .reader-footer-bar {
+        position: fixed;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        background: var(--bone, #f7f1de);
+        border: 2px solid var(--ink, #15140f);
+        padding: 8px 16px;
+        box-shadow: 4px 4px 0px var(--ink, #15140f);
+        z-index: 1000;
+    }
+
+    .nav-btn {
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+        color: var(--ink, #15140f);
+        background: transparent;
+        border: 1px solid transparent;
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+
+    .nav-btn:hover:not(:disabled) {
+        background: rgba(0, 0, 0, 0.05);
+    }
+
+    .nav-btn:disabled {
+        opacity: 0.3;
+        cursor: not-allowed;
+    }
+
+    .progress-info {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .progress-text {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 12px;
+        font-weight: 700;
+        color: var(--ink, #15140f);
+        white-space: nowrap;
+    }
+
+    .page-slider {
+        width: 150px;
+        accent-color: var(--coral, #ed6f5c);
+        cursor: pointer;
     }
 </style>

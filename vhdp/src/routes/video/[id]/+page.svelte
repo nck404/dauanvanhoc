@@ -9,6 +9,11 @@
     let isBookmarked = $state(false);
     let recommended = $state([]);
     let loading = $state(true);
+    let isBuffering = $state(false);
+
+    let comments = $state([]);
+    let newCommentText = $state("");
+    let loadingComments = $state(true);
 
     function usePlyr(node) {
         const player = new Plyr(node, {
@@ -29,6 +34,11 @@
             speed: { selected: 1, options: [0.5, 0.75, 1, 1.25, 1.5, 2] }
         });
 
+        player.on('waiting', () => { isBuffering = true; });
+        player.on('playing', () => { isBuffering = false; });
+        player.on('seeking', () => { isBuffering = true; });
+        player.on('seeked', () => { isBuffering = false; });
+
         return {
             destroy() {
                 player.destroy();
@@ -36,137 +46,41 @@
         };
     }
 
-    let videoElement;
-    let isPlaying = $state(false);
-    let currentTime = $state(0);
-    let duration = $state(0);
-    let volume = $state(0.85);
-    let isMuted = $state(false);
-    let playbackRate = $state(1);
-    let isFullscreen = $state(false);
-    let progress = $derived(duration > 0 ? (currentTime / duration) * 100 : 0);
-    let isWaiting = $state(false);
-
-    let isLiked = $state(false);
-    let likesOffset = $state(0);
-    let likeCount = $derived(video ? (video.views ? Math.floor(video.views * 0.15) + 3 : 12) + likesOffset : 0);
     let isSubscribed = $state(false);
     let isExpanded = $state(false);
     let isCopied = $state(false);
-    let showOverlayType = $state("");
-    let overlayTimeout;
 
-    const speedSteps = [1, 1.25, 1.5, 2];
-
-    function formatTime(seconds) {
-        if (!seconds || Number.isNaN(seconds)) return "0:00";
-        const mins = Math.floor(seconds / 60);
-        const secs = Math.floor(seconds % 60);
-        return `${mins}:${secs.toString().padStart(2, "0")}`;
-    }
-
-    function togglePlay() {
-        if (!videoElement) return;
-
-        if (isPlaying) {
-            videoElement.pause();
-            triggerOverlayAnimation("pause");
-        } else {
-            videoElement.play().catch(() => {});
-            triggerOverlayAnimation("play");
-        }
-
-        isPlaying = !isPlaying;
-    }
-
-    function triggerOverlayAnimation(type) {
-        showOverlayType = type;
-        clearTimeout(overlayTimeout);
-        overlayTimeout = setTimeout(() => {
-            showOverlayType = "";
-        }, 600);
-    }
-
-    function skip(seconds) {
-        if (!videoElement) return;
-        const nextTime = Math.min(
-            Math.max(videoElement.currentTime + seconds, 0),
-            duration || videoElement.duration || 0,
-        );
-        videoElement.currentTime = nextTime;
-        currentTime = nextTime;
-    }
-
-    function seek(event) {
-        if (!videoElement || !duration) return;
-        const rect = event.currentTarget.getBoundingClientRect();
-        const percent = Math.min(
-            Math.max((event.clientX - rect.left) / rect.width, 0),
-            1,
-        );
-        const nextTime = percent * duration;
-        videoElement.currentTime = nextTime;
-        currentTime = nextTime;
-    }
-
-    function updateVolume(event) {
-        if (!videoElement) return;
-        const nextVolume = Number(event.currentTarget.value);
-        updateVolumeValue(nextVolume);
-    }
-
-    function updateVolumeValue(nextVolume) {
-        if (!videoElement) return;
-        volume = nextVolume;
-        videoElement.volume = nextVolume;
-        if (nextVolume > 0) {
-            isMuted = false;
-            videoElement.muted = false;
-        } else {
-            isMuted = true;
-            videoElement.muted = true;
+    async function loadComments() {
+        try {
+            const res = await apiFetch(`/api/videos/${page.params.id}/comments`);
+            if (res.ok) {
+                const data = await res.json();
+                comments = data.comments || [];
+            }
+        } catch (e) {
+            console.error(e);
+        } finally {
+            loadingComments = false;
         }
     }
 
-    function toggleMute() {
-        if (!videoElement) return;
-        isMuted = !isMuted;
-        videoElement.muted = isMuted;
-        if (!isMuted && volume === 0) {
-            volume = 0.5;
-            videoElement.volume = volume;
-        }
-    }
-
-    function changeSpeed() {
-        const currentIndex = speedSteps.indexOf(playbackRate);
-        const nextRate = speedSteps[(currentIndex + 1) % speedSteps.length];
-        playbackRate = nextRate;
-
-        if (videoElement) {
-            videoElement.playbackRate = nextRate;
-        }
-    }
-
-    async function toggleFullscreen() {
-        if (!videoElement) return;
-
-        if (document.fullscreenElement) {
-            await document.exitFullscreen().catch(() => {});
-            isFullscreen = false;
-            return;
-        }
-
-        await videoElement.parentElement?.requestFullscreen?.().catch(() => {});
-        isFullscreen = true;
-    }
-
-    function toggleLike() {
-        isLiked = !isLiked;
-        if (isLiked) {
-            likesOffset += 1;
-        } else {
-            likesOffset -= 1;
+    async function postComment(e) {
+        if (e) e.preventDefault();
+        if (!newCommentText.trim()) return;
+        try {
+            const res = await apiFetch(`/api/videos/${page.params.id}/comments`, {
+                method: "POST",
+                body: JSON.stringify({ content: newCommentText })
+            });
+            if (res.ok) {
+                const data = await res.json();
+                if (data.success && data.comment) {
+                    comments = [data.comment, ...comments];
+                    newCommentText = "";
+                }
+            }
+        } catch (e) {
+            console.error(e);
         }
     }
 
@@ -187,6 +101,8 @@
     }
 
     async function toggleBookmark() {
+        const previousState = isBookmarked;
+        isBookmarked = !isBookmarked;
         try {
             const res = await apiFetch(`/api/videos/${page.params.id}`, {
                 method: "POST"
@@ -194,48 +110,12 @@
             if (res.ok) {
                 const result = await res.json();
                 isBookmarked = result.isBookmarked;
+            } else {
+                isBookmarked = previousState;
             }
         } catch (e) {
             console.error(e);
-        }
-    }
-
-    function handleKeyDown(event) {
-        if (["INPUT", "TEXTAREA", "SELECT"].includes(document.activeElement?.tagName)) {
-            return;
-        }
-
-        switch (event.code) {
-            case "Space":
-                event.preventDefault();
-                togglePlay();
-                break;
-            case "ArrowLeft":
-                event.preventDefault();
-                skip(-10);
-                break;
-            case "ArrowRight":
-                event.preventDefault();
-                skip(10);
-                break;
-            case "ArrowUp":
-                event.preventDefault();
-                const nextVolUp = Math.min(volume + 0.05, 1);
-                updateVolumeValue(nextVolUp);
-                break;
-            case "ArrowDown":
-                event.preventDefault();
-                const nextVolDown = Math.max(volume - 0.05, 0);
-                updateVolumeValue(nextVolDown);
-                break;
-            case "KeyM":
-                event.preventDefault();
-                toggleMute();
-                break;
-            case "KeyF":
-                event.preventDefault();
-                toggleFullscreen();
-                break;
+            isBookmarked = previousState;
         }
     }
 
@@ -250,23 +130,15 @@
                 isBookmarked = data.isBookmarked;
                 recommended = data.recommended || [];
             }
+            await loadComments();
         } catch (e) {
             console.error(e);
         } finally {
             loading = false;
         }
 
-        if (videoElement) {
-            videoElement.volume = volume;
-            videoElement.playbackRate = playbackRate;
-            videoElement.muted = isMuted;
-        }
-
-        window.addEventListener("keydown", handleKeyDown);
-
         return () => {
             document.body.classList.remove("paper-theme");
-            window.removeEventListener("keydown", handleKeyDown);
         };
     });
 </script>
@@ -276,176 +148,232 @@
 </svelte:head>
 
 {#if loading}
-    <div style="display: flex; align-items: center; justify-content: center; height: 100vh; font-size: 18px; font-weight: 500;">
-        Đang tải...
+    <div class="loader-cover">
+        <div class="spinner"></div>
     </div>
 {:else if video}
-
     <div class="video-container">
-    <div class="content-layout">
-        <header class="player-header">
-            <a href="/video" class="back-link">
-                <i class="bx bx-left-arrow-alt"></i> Quay lại thư viện
-            </a>
-        </header>
+        <div class="content-layout">
+            <header class="player-header">
+                <a href="/video" class="back-link">
+                    <i class="bx bx-left-arrow-alt"></i> Quay lại thư viện
+                </a>
+            </header>
 
-        <div class="video-layout-grid">
-            <div class="video-main-column">
-                <div class="player-section comic-card">
-                    <div class="video-wrapper">
-                        <video
-                            use:usePlyr
-                            src={video.video_url}
-                            poster={video.cover_url}
-                            class="main-video"
-                            playsinline
-                        >
-                            <track kind="captions" />
-                            Trình duyệt của bạn không hỗ trợ xem video.
-                        </video>
+            <div class="video-layout-grid">
+                <div class="video-main-column">
+                    <div class="player-section newsprint-card">
+                        <div class="video-wrapper">
+                            <video
+                                use:usePlyr
+                                src={video.video_url}
+                                poster={video.cover_url}
+                                class="main-video"
+                                playsinline
+                            >
+                                <track kind="captions" />
+                            </video>
+                            {#if isBuffering}
+                                <div class="buffering-overlay">
+                                    <div class="spinner"></div>
+                                    <p>Đang tải...</p>
+                                </div>
+                            {/if}
+                        </div>
                     </div>
-                </div>
 
-                <div class="video-info-compact-card">
-                    <h1>{video.title}</h1>
+                    <div class="video-info-card newsprint-card">
+                        <h1>{video.title}</h1>
 
-                    <div class="channel-actions-bar">
-                        <div class="author-profile">
-                            <div class="author-avatar-glow">
+                        <div class="channel-actions-bar">
+                            <div class="author-profile">
                                 <div class="author-avatar">
                                     {video.author ? video.author.charAt(0).toUpperCase() : "V"}
                                 </div>
+                                <div class="author-meta-info">
+                                    <span class="author-name">{video.author || "Tác giả"}</span>
+                                    <span class="subscriber-count">Tư liệu viên</span>
+                                </div>
+                                <button
+                                    type="button"
+                                    class="subscribe-btn {isSubscribed ? 'subscribed' : ''}"
+                                    onclick={toggleSubscribe}
+                                >
+                                    {isSubscribed ? "Đã theo dõi" : "Theo dõi"}
+                                </button>
                             </div>
-                            <div class="author-meta-info">
-                                <span class="author-name">{video.author || "Tác giả"}</span>
-                                <span class="subscriber-count">Tư liệu viên</span>
+
+                            <div class="actions-pill-group">
+                                <button
+                                    onclick={toggleBookmark}
+                                    class="action-pill-btn {isBookmarked ? 'bookmarked' : ''}"
+                                    title={isBookmarked ? "Đã lưu vào yêu thích" : "Thêm vào yêu thích"}
+                                >
+                                    <i class="bx {isBookmarked ? 'bxs-heart' : 'bx-heart'}"></i>
+                                    <span>{isBookmarked ? "Yêu thích" : "Yêu thích"}</span>
+                                </button>
+
+                                <button
+                                    type="button"
+                                    class="action-pill-btn"
+                                    onclick={shareVideo}
+                                >
+                                    <i class="bx bx-share-alt"></i>
+                                    <span>{isCopied ? "Đã sao chép!" : "Chia sẻ"}</span>
+                                </button>
+
+                                {#if video.video_url}
+                                    <a
+                                        href={video.video_url}
+                                        download
+                                        target="_blank"
+                                        class="action-pill-btn"
+                                    >
+                                        <i class="bx bx-download"></i>
+                                        <span>Tải về</span>
+                                    </a>
+                                {/if}
                             </div>
-                            <button
-                                type="button"
-                                class="subscribe-btn comic-btn comic-btn--sm {isSubscribed ? 'comic-btn--white' : 'comic-btn--red'}"
-                                onclick={toggleSubscribe}
-                            >
-                                {isSubscribed ? "Đã theo dõi" : "Theo dõi"}
-                            </button>
+                        </div>
+                    </div>
+
+                    <div class="description-card newsprint-card" class:expanded={isExpanded}>
+                        <div class="desc-stats-row">
+                            <span class="stat-item"><i class="bx bx-show-alt"></i> {video.views + 1} lượt xem</span>
+                            <span class="stat-item"><i class="bx bx-calendar"></i> {new Date(video.created_at).toLocaleDateString("vi-VN")}</span>
+                            <span class="stat-tag">#dauandanvanhoc</span>
                         </div>
 
-                        <div class="actions-pill-group">
-                            <button
-                                type="button"
-                                class="action-pill-btn {isLiked ? 'liked' : ''}"
-                                onclick={toggleLike}
-                            >
-                                <i class="bx {isLiked ? 'bxs-like' : 'bx-like'}"></i>
-                                <span>{likeCount}</span>
-                            </button>
-                            <button
-                                onclick={toggleBookmark}
-                                class="action-pill-btn {isBookmarked ? 'bookmarked' : ''}"
-                            >
-                                <i class="bx {isBookmarked ? 'bxs-bookmark' : 'bx-bookmark'}"></i>
-                                <span>{isBookmarked ? "Đã lưu" : "Lưu"}</span>
-                            </button>
+                        <div class="description-body">
+                            {#if video.description}
+                                {@html video.description}
+                            {:else}
+                                <p>Không có mô tả cho video này.</p>
+                            {/if}
+                        </div>
 
-                            <button
-                                type="button"
-                                class="action-pill-btn share-btn-state"
-                                onclick={shareVideo}
-                            >
-                                <i class="bx bx-share-alt"></i>
-                                <span>{isCopied ? "Đã sao chép!" : "Chia sẻ"}</span>
-                            </button>
+                        {#if !isExpanded}
+                            <div class="description-fade-overlay"></div>
+                        {/if}
 
-                            {#if video.video_url}
-                                <a
-                                    href={video.video_url}
-                                    download
-                                    target="_blank"
-                                    class="action-pill-btn-link"
-                                >
-                                    <i class="bx bx-download"></i>
-                                    <span>Tải về</span>
-                                </a>
+                        <button type="button" class="expand-toggle-btn" onclick={toggleExpand}>
+                            {isExpanded ? "Rút gọn" : "Xem thêm"}
+                            <i class="bx {isExpanded ? 'bx-chevron-up' : 'bx-chevron-down'}"></i>
+                        </button>
+                    </div>
+
+                    <div class="comments-section newsprint-card">
+                        <h2>Bình luận ({comments.length})</h2>
+
+                        <form onsubmit={postComment} class="comment-input-box">
+                            <textarea
+                                placeholder="Viết bình luận của bạn..."
+                                bind:value={newCommentText}
+                                rows="3"
+                                class="comment-textarea"
+                            ></textarea>
+                            <div class="comment-submit-row">
+                                <button type="submit" class="newsprint-btn newsprint-btn--primary">Gửi bình luận</button>
+                            </div>
+                        </form>
+
+                        <div class="comments-list">
+                            {#if loadingComments}
+                                <p class="loading-comments font-mono">Đang tải bình luận...</p>
+                            {:else if comments.length === 0}
+                                <p class="empty-comments">Chưa có bình luận nào. Hãy là người đầu tiên bình luận!</p>
+                            {:else}
+                                {#each comments as comment (comment.id)}
+                                    <div class="comment-item">
+                                        <div class="comment-avatar">
+                                            {comment.username ? comment.username.charAt(0).toUpperCase() : "U"}
+                                        </div>
+                                        <div class="comment-content-box">
+                                            <div class="comment-header">
+                                                <span class="comment-author">{comment.name || comment.username}</span>
+                                                <span class="comment-time">{new Date(comment.created_at).toLocaleDateString("vi-VN")}</span>
+                                            </div>
+                                            <p class="comment-body-text">{comment.content}</p>
+                                        </div>
+                                    </div>
+                                {/each}
                             {/if}
                         </div>
                     </div>
                 </div>
 
-                <div class="description-expandable-card" class:expanded={isExpanded}>
-                    <div class="desc-stats-row">
-                        <span class="stat-item"><i class="bx bx-show-alt"></i> {video.views + 1} lượt xem</span>
-                        <span class="stat-item"><i class="bx bx-calendar"></i> {new Date(video.created_at).toLocaleDateString("vi-VN")}</span>
-                        <span class="stat-tag">#dauandanvanhoc</span>
-                        <span class="stat-tag">#tulieu</span>
+                <aside class="video-sidebar-column newsprint-card">
+                    <div class="sidebar-header">
+                        <h3>Nội dung liên quan</h3>
+                        <div class="pulse-indicator"></div>
                     </div>
 
-                    <div class="description-body">
-                        {#if video.description}
-                            {@html video.description}
+                    <div class="sidebar-list">
+                        {#if !recommended?.length}
+                            <div class="empty-sidebar">
+                                Không có video gợi ý nào khác.
+                            </div>
                         {:else}
-                            <p>Không có mô tả cho video này.</p>
+                            {#each recommended as rec}
+                                <a href="/video/{rec.id}" class="recommended-card-horizontal">
+                                    <div class="rec-thumbnail-box">
+                                        {#if rec.cover_url}
+                                            <img src={rec.cover_url} alt={rec.title} />
+                                        {:else}
+                                            <div class="rec-placeholder-box">
+                                                <i class="bx bx-video"></i>
+                                            </div>
+                                        {/if}
+                                        <span class="play-small-icon"><i class="bx bx-play"></i></span>
+                                    </div>
+                                    <div class="rec-details">
+                                        <h4>{rec.title}</h4>
+                                        <span class="rec-author">{rec.author || "Tác giả"}</span>
+                                        <span class="rec-views"><i class="bx bx-show"></i> {rec.views} lượt xem</span>
+                                    </div>
+                                </a>
+                            {/each}
                         {/if}
                     </div>
-
-                    {#if !isExpanded}
-                        <div class="description-fade-overlay"></div>
-                    {/if}
-
-                    <button type="button" class="expand-toggle-btn" onclick={toggleExpand}>
-                        {isExpanded ? "Rút gọn" : "Xem thêm"}
-                        <i class="bx {isExpanded ? 'bx-chevron-up' : 'bx-chevron-down'}"></i>
-                    </button>
-                </div>
+                </aside>
             </div>
-
-            <aside class="video-sidebar-column">
-                <div class="sidebar-header">
-                    <h3><i class="bx bx-compass"></i> Nội dung liên quan</h3>
-                    <div class="pulse-indicator"></div>
-                </div>
-
-                <div class="sidebar-list">
-                    {#if !recommended?.length}
-                        <div class="empty-sidebar">
-                            Không có video gợi ý nào khác.
-                        </div>
-                    {:else}
-                        {#each recommended as rec}
-                            <a href="/video/{rec.id}" class="recommended-card-horizontal">
-                                <div class="rec-thumbnail-box">
-                                    {#if rec.cover_url}
-                                        <img src={rec.cover_url} alt={rec.title} />
-                                    {:else}
-                                        <div class="rec-placeholder-box">
-                                            <i class="bx bx-video"></i>
-                                        </div>
-                                    {/if}
-                                    <span class="play-small-icon"><i class="bx bx-play"></i></span>
-                                </div>
-                                <div class="rec-details">
-                                    <h4>{rec.title}</h4>
-                                    <span class="rec-author">{rec.author || "Tác giả"}</span>
-                                    <span class="rec-views"><i class="bx bx-show"></i> {rec.views} lượt xem</span>
-                                </div>
-                            </a>
-                        {/each}
-                    {/if}
-                </div>
-            </aside>
         </div>
     </div>
-</div>
 {:else}
-    <div style="display: flex; align-items: center; justify-content: center; height: 100vh; font-size: 18px; font-weight: 500;">
-        Không tìm thấy video
+    <div class="loader-cover">
+        <p>Không tìm thấy video</p>
     </div>
 {/if}
 
 <style>
+    .loader-cover {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+        width: 100vw;
+        background: var(--newsprint-bg);
+        font-family: 'Space Grotesk', sans-serif;
+    }
+
+    .spinner {
+        width: 40px;
+        height: 40px;
+        border: 4px solid var(--newsprint-divider);
+        border-top-color: var(--newsprint-red);
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+
     .video-container {
         min-height: 100vh;
         background: transparent;
-        padding-bottom: 80px;
-        font-family: "Space Grotesk", sans-serif;
+        padding-bottom: 120px;
     }
 
     .content-layout {
@@ -466,7 +394,7 @@
         align-items: center;
         gap: 8px;
         text-decoration: none;
-        color: var(--ink-faint);
+        color: var(--newsprint-ink);
         font-family: "Space Grotesk", sans-serif;
         font-weight: 700;
         font-size: 12px;
@@ -476,7 +404,7 @@
     }
 
     .back-link:hover {
-        color: var(--coral);
+        color: var(--newsprint-red);
     }
 
     .video-layout-grid {
@@ -495,13 +423,16 @@
     .video-main-column {
         display: flex;
         flex-direction: column;
-        gap: 16px;
+        gap: 20px;
     }
 
     .player-section {
-        background: var(--paper-warm);
+        background: var(--newsprint-surface);
+        border: 2px solid var(--newsprint-ink);
+        box-shadow: 4px 4px 0 var(--newsprint-ink);
         overflow: hidden;
         position: relative;
+        padding: 0;
     }
 
     .video-wrapper {
@@ -510,7 +441,6 @@
         aspect-ratio: 16 / 9;
         position: relative;
         overflow: hidden;
-        cursor: pointer;
     }
 
     .main-video {
@@ -521,183 +451,34 @@
         outline: none;
     }
 
-    .action-overlay-animation {
+    .buffering-overlay {
         position: absolute;
         inset: 0;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: rgba(0, 0, 0, 0.15);
-        pointer-events: none;
-        animation: fadeOutOverlay 0.6s ease forwards;
-    }
-
-    .overlay-icon-box {
-        width: 72px;
-        height: 72px;
-        background: rgba(0, 0, 0, 0.6);
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: #fff;
-        font-size: 36px;
-        border: 2px solid rgba(255, 255, 255, 0.2);
-        animation: scalePop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-    }
-
-    @keyframes fadeOutOverlay {
-        0% { opacity: 1; }
-        80% { opacity: 1; }
-        100% { opacity: 0; }
-    }
-
-    @keyframes scalePop {
-        0% { transform: scale(0.6); opacity: 0; }
-        50% { transform: scale(1.1); opacity: 1; }
-        100% { transform: scale(1); }
-    }
-
-    .player-toolbar {
-        padding: 14px 16px 16px;
+        background: rgba(30, 27, 24, 0.6);
         display: flex;
         flex-direction: column;
-        gap: 10px;
-        background: #fff;
-        border-top: 3px solid #1a1515;
-    }
-
-    .seek-row {
-        width: 100%;
-        cursor: pointer;
-        padding: 6px 0;
-    }
-
-    .seek-track {
-        position: relative;
-        width: 100%;
-        height: 5px;
-        background: var(--accent-light);
-        border: 1px solid #1a1515;
-        border-radius: 999px;
-    }
-
-    .seek-fill {
-        height: 100%;
-        background: var(--coral);
-        border-radius: inherit;
-    }
-
-    .seek-thumb {
-        position: absolute;
-        top: 50%;
-        width: 12px;
-        height: 12px;
-        border-radius: 50%;
-        background: #fff;
-        border: 2px solid #1a1515;
-        transform: translate(-50%, -50%);
-        pointer-events: none;
-    }
-
-    .control-row {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 8px;
-        flex-wrap: wrap;
-    }
-
-    .control-group {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        min-width: 0;
-    }
-
-    .control-group.center {
-        font-family: "JetBrains Mono", monospace;
-        font-size: 11px;
-        font-weight: 700;
-        color: #1a1515;
-    }
-
-    .time-sep {
-        opacity: 0.5;
-    }
-
-    .time-code {
-        min-width: 40px;
-        text-align: center;
-    }
-
-    .control-btn {
-        width: 32px;
-        height: 32px;
-        border-radius: 50%;
-        border: 2px solid #1a1515;
-        background: #fff;
-        color: #1a1515;
-        display: inline-flex;
         align-items: center;
         justify-content: center;
-        font-size: 15px;
-        box-shadow: 2px 2px 0px #1a1515;
-        transition: all 0.15s ease;
+        gap: 12px;
+        color: white;
+        z-index: 10;
+        font-family: 'Space Grotesk', sans-serif;
+        font-weight: 700;
     }
 
-    .control-btn:hover {
-        transform: translate(1px, 1px);
-        box-shadow: 1px 1px 0px #1a1515;
-        background: var(--accent-light);
-        color: var(--coral);
+    .video-info-card {
+        background: var(--newsprint-surface);
+        border: 2px solid var(--newsprint-ink);
+        box-shadow: 4px 4px 0 var(--newsprint-ink);
+        padding: 24px;
     }
 
-    .play-btn {
-        width: 40px;
-        height: 40px;
-        background: var(--coral);
-        color: #fff;
-    }
-
-    .play-btn:hover {
-        background: #ef6b6b;
-        color: #fff;
-    }
-
-    .speed-btn {
-        width: auto;
-        min-width: 38px;
-        padding: 0 8px;
-        height: 28px;
-        border-radius: 6px;
-        font-family: "Space Grotesk", sans-serif;
-        font-weight: 800;
-        font-size: 10px;
-    }
-
-    .volume-slider {
-        width: 80px;
-        accent-color: var(--coral);
-        height: 6px;
-        border-radius: 3px;
-        outline: none;
-    }
-
-    .video-info-compact-card {
-        background: #fff;
-        border: 3px solid #1a1515;
-        border-radius: 12px;
-        padding: 20px;
-        box-shadow: 4px 4px 0px #1a1515;
-    }
-
-    .video-info-compact-card h1 {
+    .video-info-card h1 {
         font-family: "Space Grotesk", sans-serif;
         font-size: 24px;
         font-weight: 800;
         line-height: 1.3;
-        color: #1a1515;
+        color: var(--newsprint-ink);
         margin-bottom: 20px;
     }
 
@@ -715,18 +496,11 @@
         gap: 12px;
     }
 
-    .author-avatar-glow {
-        background: linear-gradient(135deg, var(--coral), #f1c40f);
-        padding: 2px;
-        border-radius: 50%;
-        box-shadow: 0 0 10px rgba(225, 91, 91, 0.2);
-    }
-
     .author-avatar {
-        width: 42px;
-        height: 42px;
-        background: #1a1515;
-        color: #fff;
+        width: 44px;
+        height: 44px;
+        background: var(--newsprint-ink);
+        color: var(--newsprint-white);
         border-radius: 50%;
         display: flex;
         align-items: center;
@@ -734,7 +508,7 @@
         font-family: "Space Grotesk", sans-serif;
         font-weight: 900;
         font-size: 18px;
-        border: 2px solid #fff;
+        border: 2px solid var(--newsprint-ink);
     }
 
     .author-meta-info {
@@ -746,17 +520,37 @@
         font-family: "Space Grotesk", sans-serif;
         font-weight: 800;
         font-size: 15px;
-        color: #1a1515;
+        color: var(--newsprint-ink);
     }
 
     .subscriber-count {
         font-size: 11px;
-        color: var(--ink-faint);
+        color: var(--newsprint-neutral-500);
         font-family: "JetBrains Mono", monospace;
     }
 
     .subscribe-btn {
         margin-left: 8px;
+        padding: 8px 16px;
+        font-family: 'Space Grotesk', sans-serif;
+        font-weight: 700;
+        font-size: 12px;
+        border: 2px solid var(--newsprint-ink);
+        background: var(--newsprint-ink);
+        color: var(--newsprint-white);
+        cursor: pointer;
+        transition: all 0.2s cubic-bezier(0.165, 0.84, 0.44, 1);
+        text-shadow: none;
+    }
+
+    .subscribe-btn:hover {
+        background: var(--newsprint-white);
+        color: var(--newsprint-ink);
+    }
+
+    .subscribe-btn.subscribed {
+        background: var(--newsprint-surface);
+        color: var(--newsprint-ink);
     }
 
     .actions-pill-group {
@@ -766,85 +560,75 @@
         flex-wrap: wrap;
     }
 
-    .action-pill-btn, .action-pill-btn-link {
+    .action-pill-btn {
         display: inline-flex;
         align-items: center;
         gap: 6px;
-        padding: 8px 14px;
-        border: 2px solid #1a1515;
-        background: var(--accent-light);
-        border-radius: 999px;
+        padding: 8px 16px;
+        border: 2px solid var(--newsprint-ink);
+        background: var(--newsprint-white);
         font-family: "Space Grotesk", sans-serif;
         font-weight: 700;
         font-size: 12px;
-        color: #1a1515;
+        color: var(--newsprint-ink);
         cursor: pointer;
-        transition: all 0.15s ease;
+        transition: all 0.2s cubic-bezier(0.165, 0.84, 0.44, 1);
+        text-shadow: none;
     }
 
-    .action-pill-btn:hover, .action-pill-btn-link:hover {
+    .action-pill-btn:hover {
         transform: translateY(-2px);
-        background: #fff;
-        box-shadow: 0 4px 0px #1a1515;
-    }
-
-    .action-pill-btn.liked {
-        background: #ffe5e5;
-        border-color: var(--coral);
-        color: var(--coral);
+        box-shadow: 3px 3px 0 var(--newsprint-ink);
     }
 
     .action-pill-btn.bookmarked {
-        background: #e5f1ff;
-        border-color: #2563eb;
-        color: #2563eb;
+        background: var(--newsprint-red);
+        color: var(--newsprint-white);
+        border-color: var(--newsprint-ink);
     }
 
-    .description-expandable-card {
-        background: rgba(26, 21, 21, 0.03);
-        border: 2px solid #1a1515;
-        border-radius: 12px;
-        padding: 16px;
+    .description-card {
+        background: var(--newsprint-surface);
+        border: 2px solid var(--newsprint-ink);
+        box-shadow: 4px 4px 0 var(--newsprint-ink);
+        padding: 20px;
         position: relative;
         overflow: hidden;
         transition: max-height 0.3s ease;
-        max-height: 140px;
+        max-height: 160px;
     }
 
-    .description-expandable-card.expanded {
+    .description-card.expanded {
         max-height: 2000px;
     }
 
     .desc-stats-row {
         display: flex;
         align-items: center;
-        gap: 12px;
+        gap: 16px;
         flex-wrap: wrap;
         margin-bottom: 12px;
         font-family: "Space Grotesk", sans-serif;
         font-weight: 700;
         font-size: 13px;
-        color: #1a1515;
+        color: var(--newsprint-ink);
     }
 
     .stat-item i {
-        color: var(--coral);
-        margin-right: 2px;
+        color: var(--newsprint-red);
+        margin-right: 4px;
     }
 
     .stat-tag {
-        color: #2563eb;
+        color: var(--newsprint-red);
         font-size: 12px;
     }
 
     .description-body {
         font-size: 14px;
         line-height: 1.7;
-        color: var(--ink-soft);
-    }
-
-    .description-body p {
-        margin-bottom: 8px;
+        color: var(--newsprint-neutral-700);
+        font-family: 'Lora', serif;
     }
 
     .description-fade-overlay {
@@ -853,37 +637,153 @@
         left: 0;
         right: 0;
         height: 60px;
-        background: linear-gradient(transparent, rgba(255, 255, 255, 0.95));
+        background: linear-gradient(transparent, var(--newsprint-surface));
         pointer-events: none;
     }
 
     .expand-toggle-btn {
         width: 100%;
         text-align: center;
-        padding: 8px 0 0 0;
+        padding: 10px 0 0;
         font-family: "Space Grotesk", sans-serif;
         font-weight: 800;
         font-size: 12px;
-        color: #1a1515;
+        color: var(--newsprint-ink);
         cursor: pointer;
         display: flex;
         align-items: center;
         justify-content: center;
         gap: 4px;
-        border-top: 1px dashed rgba(26, 21, 21, 0.1);
+        border-top: 1px dashed var(--newsprint-divider);
         margin-top: 12px;
+        background: transparent;
+        border-bottom: none;
+        border-left: none;
+        border-right: none;
     }
 
     .expand-toggle-btn:hover {
-        color: var(--coral);
+        color: var(--newsprint-red);
+    }
+
+    .comments-section {
+        background: var(--newsprint-surface);
+        border: 2px solid var(--newsprint-ink);
+        box-shadow: 4px 4px 0 var(--newsprint-ink);
+        padding: 24px;
+        font-family: 'Space Grotesk', sans-serif;
+    }
+
+    .comments-section h2 {
+        font-size: 18px;
+        font-weight: 800;
+        margin-bottom: 20px;
+        color: var(--newsprint-ink);
+    }
+
+    .comment-input-box {
+        margin-bottom: 30px;
+    }
+
+    .comment-textarea {
+        width: 100%;
+        border: 2px solid var(--newsprint-ink);
+        background: var(--newsprint-white);
+        padding: 12px;
+        font-size: 14px;
+        font-family: inherit;
+        outline: none;
+        resize: vertical;
+        box-shadow: inset 2px 2px 0 rgba(0,0,0,0.05);
+    }
+
+    .comment-submit-row {
+        display: flex;
+        justify-content: flex-end;
+        margin-top: 10px;
+    }
+
+    .comments-list {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    .loading-comments {
+        text-align: center;
+        color: var(--newsprint-neutral-500);
+        font-size: 13px;
+    }
+
+    .empty-comments {
+        text-align: center;
+        color: var(--newsprint-neutral-500);
+        font-size: 14px;
+        padding: 20px 0;
+    }
+
+    .comment-item {
+        display: flex;
+        gap: 16px;
+        border-bottom: 1px dashed var(--newsprint-divider);
+        padding-bottom: 16px;
+    }
+
+    .comment-item:last-child {
+        border-bottom: none;
+        padding-bottom: 0;
+    }
+
+    .comment-avatar {
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        background: var(--newsprint-divider);
+        border: 2px solid var(--newsprint-ink);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 14px;
+        color: var(--newsprint-ink);
+        flex-shrink: 0;
+    }
+
+    .comment-content-box {
+        flex: 1;
+    }
+
+    .comment-header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 4px;
+    }
+
+    .comment-author {
+        font-weight: 700;
+        font-size: 14px;
+        color: var(--newsprint-ink);
+    }
+
+    .comment-time {
+        font-size: 11px;
+        color: var(--newsprint-neutral-500);
+        font-family: 'JetBrains Mono', monospace;
+    }
+
+    .comment-body-text {
+        font-size: 14px;
+        line-height: 1.5;
+        color: var(--newsprint-ink-soft);
+        font-family: 'Lora', serif;
     }
 
     .video-sidebar-column {
-        background: #fff;
-        border: 3px solid #1a1515;
-        border-radius: 12px;
+        background: var(--newsprint-surface);
+        border: 2px solid var(--newsprint-ink);
+        box-shadow: 4px 4px 0 var(--newsprint-ink);
         padding: 20px;
-        box-shadow: 4px 4px 0px #1a1515;
     }
 
     .sidebar-header {
@@ -891,7 +791,7 @@
         align-items: center;
         justify-content: space-between;
         margin-bottom: 20px;
-        border-bottom: 2px solid #1a1515;
+        border-bottom: 2px solid var(--newsprint-ink);
         padding-bottom: 10px;
     }
 
@@ -899,34 +799,22 @@
         font-family: "Space Grotesk", sans-serif;
         font-size: 16px;
         font-weight: 800;
-        color: #1a1515;
-        display: flex;
-        align-items: center;
-        gap: 6px;
+        color: var(--newsprint-ink);
     }
 
     .pulse-indicator {
         width: 8px;
         height: 8px;
-        background-color: var(--coral);
+        background-color: var(--newsprint-red);
         border-radius: 50%;
-        box-shadow: 0 0 0 0 rgba(225, 91, 91, 0.7);
+        box-shadow: 0 0 0 0 rgba(168, 50, 50, 0.7);
         animation: pulseAnimation 1.6s infinite;
     }
 
     @keyframes pulseAnimation {
-        0% {
-            transform: scale(0.95);
-            box-shadow: 0 0 0 0 rgba(225, 91, 91, 0.7);
-        }
-        70% {
-            transform: scale(1);
-            box-shadow: 0 0 0 6px rgba(225, 91, 91, 0);
-        }
-        100% {
-            transform: scale(0.95);
-            box-shadow: 0 0 0 0 rgba(225, 91, 91, 0);
-        }
+        0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(168, 50, 50, 0.7); }
+        70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(168, 50, 50, 0); }
+        100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(168, 50, 50, 0); }
     }
 
     .sidebar-list {
@@ -937,7 +825,7 @@
 
     .empty-sidebar {
         text-align: center;
-        color: var(--ink-faint);
+        color: var(--newsprint-neutral-500);
         font-size: 13px;
         padding: 20px 0;
     }
@@ -958,11 +846,10 @@
         width: 120px;
         aspect-ratio: 16 / 9;
         position: relative;
-        border: 2px solid #1a1515;
-        border-radius: 6px;
+        border: 2px solid var(--newsprint-ink);
         overflow: hidden;
         flex-shrink: 0;
-        background: var(--paper-warm);
+        background: var(--newsprint-bg);
     }
 
     .rec-thumbnail-box img {
@@ -978,17 +865,17 @@
         align-items: center;
         justify-content: center;
         font-size: 24px;
-        color: var(--ink-faint);
+        color: var(--newsprint-neutral-400);
     }
 
     .play-small-icon {
         position: absolute;
         inset: 0;
-        background: rgba(0, 0, 0, 0.2);
+        background: rgba(30, 27, 24, 0.2);
         display: flex;
         align-items: center;
         justify-content: center;
-        color: #fff;
+        color: white;
         font-size: 18px;
         opacity: 0;
         transition: opacity 0.2s ease;
@@ -1010,7 +897,7 @@
         font-size: 13px;
         font-weight: 700;
         line-height: 1.3;
-        color: #1a1515;
+        color: var(--newsprint-ink);
         margin-bottom: 4px;
         display: -webkit-box;
         -webkit-line-clamp: 2;
@@ -1023,36 +910,20 @@
         font-family: "Playfair Display", serif;
         font-style: italic;
         font-size: 11px;
-        color: var(--ink-mute);
+        color: var(--newsprint-neutral-600);
         margin-bottom: 2px;
     }
 
     .rec-views {
         font-size: 10px;
-        color: var(--coral);
+        color: var(--newsprint-red);
         font-family: "Space Grotesk", sans-serif;
         font-weight: 700;
     }
 
-    .buffering-spinner {
-        position: absolute;
-        inset: 0;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: rgba(0, 0, 0, 0.4);
-        pointer-events: none;
-        z-index: 10;
-    }
-
-    .buffering-spinner i {
-        font-size: 50px;
-        color: #ffffff;
-    }
-
     :global(.plyr) {
-        --plyr-color-main: var(--accent-dark, #e15b5b);
-        border-radius: 12px;
+        --plyr-color-main: var(--newsprint-red, #a83232);
+        border: none;
         overflow: hidden;
         width: 100%;
         height: 100%;
