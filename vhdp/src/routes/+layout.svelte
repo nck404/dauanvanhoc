@@ -4,6 +4,7 @@
     import Navbar from "$lib/Navbar.svelte";
     import favicon from "$lib/assets/favicon.svg";
     import Background from "$lib/components/Background.svelte";
+    import RoyalCorners from "$lib/components/RoyalCorners.svelte";
     import PageLoader from "$lib/components/PageLoader.svelte";
     import ScrollReveal from "$lib/components/ScrollReveal.svelte";
     import SearchModal from "$lib/SearchModal.svelte";
@@ -100,6 +101,7 @@
 </svelte:head>
 
 <Background />
+<RoyalCorners />
 <PageLoader bind:visible={loading} />
 
 {#if initialized}
