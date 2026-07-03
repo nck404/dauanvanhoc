@@ -155,6 +155,20 @@
     @media (max-width: 900px) {
         .map-layout {
             grid-template-columns: 1fr;
+            gap: 16px;
+        }
+        .map-view {
+            height: 420px;
+        }
+        .region-panel {
+            height: auto;
+            max-height: 450px;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .map-view {
+            height: 300px;
         }
     }
 

@@ -62,6 +62,14 @@
     box-sizing: border-box;
 }
 
+h1, h2, h3, h4, h5, h6, .hero-title, .section-title, .page-title, .logo-text {
+    text-shadow: 1.5px 1.5px 0px var(--newsprint-white), -0.5px -0.5px 0px rgba(30, 27, 24, 0.15);
+}
+
+p, span, a, button, li, label, div {
+    text-shadow: 1px 1px 0px var(--newsprint-white);
+}
+
 html, body, input, button, select, textarea {
     font-family: "Inter", sans-serif;
 }

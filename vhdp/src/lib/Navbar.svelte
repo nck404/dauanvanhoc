@@ -301,6 +301,12 @@
         gap: 28px;
         overflow-x: auto;
         flex: 1;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+        -webkit-overflow-scrolling: touch;
+    }
+    .nav-links::-webkit-scrollbar {
+        display: none;
     }
 
     .nav-link {
