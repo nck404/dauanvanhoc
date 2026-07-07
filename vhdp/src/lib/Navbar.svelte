@@ -129,7 +129,7 @@
 
     .nav-pill-indicator {
         position: fixed;
-        bottom: 24px;
+        top: 24px;
         left: 50%;
         transform: translateX(-50%);
         width: 140px;
@@ -423,6 +423,10 @@
     }
 
     @media (max-width: 768px) {
+        .nav-pill-indicator {
+            display: none;
+        }
+
         .masthead-top {
             flex-direction: column;
             gap: 12px;

@@ -69,7 +69,7 @@
                 <h1 class="hero-title">
                     Hành Trình Tìm về <br/>
                     <em class="hero-accent">Dấu Ấn </em> Của Văn Học Địa Phương 
-                    <span class="hero-location">Lâm Đồng<span class="hero-dot">.</span></span>
+                    <span class="hero-location" style ="color:#a83232">Lâm Đồng <span class="hero-dot"> .</span></span>
                 </h1>
                 
                 <p class="hero-lead">

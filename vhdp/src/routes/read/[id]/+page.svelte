@@ -23,6 +23,7 @@
     let currentPage = $state(1);
     let totalPages = $state(1);
     let handleResizeFn;
+    let isMobile = $state(false);
 
 
 
@@ -377,6 +378,8 @@
         }
     }
 
+    let handleResizeGlobal;
+
     onMount(() => {
         if (browser) {
             const bookId = page.params.id;
@@ -390,9 +393,14 @@
                         chapters = result.chapters || [];
                         isBookmarked = result.isBookmarked;
 
-                        await ensureJQueryAndTurn();
-                        document.body.classList.add("paper-theme");
-                        setTimeout(paginate, 500);
+                        isMobile = window.innerWidth < 768;
+                        if (isMobile) {
+                            isLoaded = true;
+                        } else {
+                            await ensureJQueryAndTurn();
+                            document.body.classList.add("paper-theme");
+                            setTimeout(paginate, 500);
+                        }
                     }
                 } catch (e) {
                     console.error(e);
@@ -403,8 +411,23 @@
             
             loadData();
 
+            handleResizeGlobal = async () => {
+                const nowMobile = window.innerWidth < 768;
+                if (nowMobile !== isMobile) {
+                    isMobile = nowMobile;
+                    if (!isMobile && !isLoaded) {
+                        loading = true;
+                        await ensureJQueryAndTurn();
+                        document.body.classList.add("paper-theme");
+                        setTimeout(paginate, 500);
+                    }
+                }
+            };
+            window.addEventListener("resize", handleResizeGlobal);
+
             return () => {
                 document.body.classList.remove("paper-theme");
+                window.removeEventListener("resize", handleResizeGlobal);
                 if (handleResizeFn) {
                     window.removeEventListener("resize", handleResizeFn);
                 }
@@ -433,7 +456,9 @@
         <div bind:this={measureElement} class="measure-layer" style="--fz: {fontSize}px; --lh: {lineHeight};"></div>
 
         <div class="reader-container">
-            <div class="progress-bar-top" style="width: {(currentPage / totalPages) * 100}%"></div>
+            {#if !isMobile}
+                <div class="progress-bar-top" style="width: {(currentPage / totalPages) * 100}%"></div>
+            {/if}
 
             <a href="/library" class="floating-btn back" title="Quay lại">
                 <i class="bx bx-left-arrow-alt"></i>
@@ -449,82 +474,115 @@
             </button>
 
             <div class="workspace">
-                <div class="flipbook-viewport" class:ready={isLoaded}>
-                    <div bind:this={flipbookElement} class="flipbook">
-                        {#each paginatedContent as page}
-                            <div class="page {page.type === 'hard' ? 'hard' : ''}">
-                                {#if page.type === "hard"}
-                                    <div class="hard-content">
-                                        {#if page.title}
-                                            <div class="book-cover-design">
-                                                {#if book?.cover_url && page.title !== "Hết"}
-                                                    <img
-                                                        src={book.cover_url}
-                                                        alt="Cover"
-                                                        class="cover-image-bg"
-                                                    />
-                                                {/if}
-                                                <h1>{page.title}</h1>
-                                                <h3>{page.sub}</h3>
-                                                <div class="ornament">❧</div>
-                                            </div>
-                                        {/if}
-                                    </div>
-                                {:else}
-                                    <div class="page-inner">
-                                        <article
-                                            class="content-body"
-                                            style="--fz: {fontSize}px; --lh: {lineHeight};"
-                                        >
-                                            {#if page.title}
-                                                <h2 class="chapter-header">
-                                                    {page.title}
-                                                </h2>
-                                            {/if}
-                                            <div class="text-content">
-                                                {@html page.content}
-                                            </div>
-                                        </article>
-                                        <div class="page-number">
-                                            - {page.pageNum} -
-                                        </div>
-                                    </div>
-                                {/if}
-                            </div>
-                        {/each}
-                    </div>
-                </div>
+                {#if isMobile}
+                    <div class="mobile-reader" style="--fz: {fontSize}px; --lh: {lineHeight};">
+                        <div class="mobile-cover">
+                            {#if book.cover_url}
+                                <img src={book.cover_url} alt="Cover" class="mobile-cover-img" />
+                            {/if}
+                            <h1 class="mobile-title">{book.title}</h1>
+                            <p class="mobile-author">{book.author}</p>
+                            <div class="ornament">* * *</div>
+                        </div>
 
-                {#if !isLoaded}
-                    <div class="loading-overlay">
-                        <div class="loader"></div>
-                        <p>Đang dàn trang sách...</p>
+                        {#each chapters as chapter}
+                            <article class="mobile-chapter">
+                                <h2 class="mobile-chapter-title">
+                                    {chapter.title || `Chương ${chapter.chapter_number}`}
+                                </h2>
+                                <div class="mobile-chapter-body">
+                                    {@html /<[a-z][\s\S]*>/i.test(chapter.content) 
+                                        ? chapter.content 
+                                        : chapter.content.split(/\n+/).map(p => `<p>${p.trim()}</p>`).join("")}
+                                </div>
+                            </article>
+                        {/each}
+
+                        <div class="mobile-end">
+                            <div class="ornament">* * *</div>
+                            <p>Hết. Cảm ơn bạn đã đọc!</p>
+                        </div>
                     </div>
+                {:else}
+                    <div class="flipbook-viewport" class:ready={isLoaded}>
+                        <div bind:this={flipbookElement} class="flipbook">
+                            {#each paginatedContent as page}
+                                <div class="page {page.type === 'hard' ? 'hard' : ''}">
+                                    {#if page.type === "hard"}
+                                        <div class="hard-content">
+                                            {#if page.title}
+                                                <div class="book-cover-design">
+                                                    {#if book?.cover_url && page.title !== "Hết"}
+                                                        <img
+                                                            src={book.cover_url}
+                                                            alt="Cover"
+                                                            class="cover-image-bg"
+                                                        />
+                                                    {/if}
+                                                    <h1>{page.title}</h1>
+                                                    <h3>{page.sub}</h3>
+                                                    <div class="ornament">❧</div>
+                                                </div>
+                                            {/if}
+                                        </div>
+                                    {:else}
+                                        <div class="page-inner">
+                                            <article
+                                                class="content-body"
+                                                style="--fz: {fontSize}px; --lh: {lineHeight};"
+                                            >
+                                                {#if page.title}
+                                                    <h2 class="chapter-header">
+                                                        {page.title}
+                                                    </h2>
+                                                {/if}
+                                                <div class="text-content">
+                                                    {@html page.content}
+                                                </div>
+                                            </article>
+                                            <div class="page-number">
+                                                - {page.pageNum} -
+                                            </div>
+                                        </div>
+                                    {/if}
+                                </div>
+                            {/each}
+                        </div>
+                    </div>
+
+                    {#if !isLoaded}
+                        <div class="loading-overlay">
+                            <div class="loader"></div>
+                            <p>Đang dàn trang sách...</p>
+                        </div>
+                    {/if}
                 {/if}
             </div>
 
-            <div class="reader-footer-bar">
-                <button class="nav-btn" onclick={() => window.$(flipbookElement).turn("previous")} disabled={currentPage <= 1}>
-                    <i class="bx bx-chevron-left"></i>
-                </button>
-                <div class="progress-info">
-                    <span class="progress-text">Trang {currentPage} / {totalPages}</span>
-                    <input 
-                        type="range" 
-                        min="1" 
-                        max={totalPages} 
-                        value={currentPage} 
-                        oninput={(e) => window.$(flipbookElement).turn("page", parseInt(e.target.value))} 
-                        class="page-slider"
-                    />
+            {#if !isMobile}
+                <div class="reader-footer-bar">
+                    <button class="nav-btn" onclick={() => window.$(flipbookElement).turn("previous")} disabled={currentPage <= 1}>
+                        <i class="bx bx-chevron-left"></i>
+                    </button>
+                    <div class="progress-info">
+                        <span class="progress-text">Trang {currentPage} / {totalPages}</span>
+                        <input 
+                            type="range" 
+                            min="1" 
+                            max={totalPages} 
+                            value={currentPage} 
+                            oninput={(e) => window.$(flipbookElement).turn("page", parseInt(e.target.value))} 
+                            class="page-slider"
+                        />
+                    </div>
+                    <button class="nav-btn" onclick={() => window.$(flipbookElement).turn("next")} disabled={currentPage >= totalPages}>
+                        <i class="bx bx-chevron-right"></i>
+                    </button>
                 </div>
-                <button class="nav-btn" onclick={() => window.$(flipbookElement).turn("next")} disabled={currentPage >= totalPages}>
-                    <i class="bx bx-chevron-right"></i>
-                </button>
-            </div>
+            {/if}
         </div>
 
-        {#if showTutorial}
+        {#if showTutorial && !isMobile}
             <!-- svelte-ignore a11y_click_events_have_key_events -->
             <!-- svelte-ignore a11y_no_static_element_interactions -->
             <div class="tutorial-overlay" onclick={() => {
@@ -1340,5 +1398,112 @@
         width: 150px;
         accent-color: var(--coral, #ed6f5c);
         cursor: pointer;
+    }
+
+    .mobile-reader {
+        max-width: 680px;
+        margin: 0 auto;
+        padding: 40px 16px 80px 16px;
+        color: #1a1a1a;
+        background: #fdfbf7;
+        font-family: 'Lora', Georgia, serif;
+    }
+
+    .mobile-cover {
+        text-align: center;
+        margin-bottom: 60px;
+        padding: 40px 0;
+        border-bottom: 2px solid rgba(0,0,0,0.06);
+    }
+
+    .mobile-cover-img {
+        max-width: 160px;
+        height: auto;
+        margin-bottom: 24px;
+        border: 2px solid #1a1a1a;
+        box-shadow: 4px 4px 0 #1a1a1a;
+    }
+
+    .mobile-title {
+        font-family: 'Playfair Display', serif;
+        font-size: 28px;
+        font-weight: 700;
+        color: #1a1a1a;
+        margin-bottom: 12px;
+        line-height: 1.2;
+    }
+
+    .mobile-author {
+        font-family: 'Space Grotesk', sans-serif;
+        font-size: 16px;
+        color: #666;
+        margin-bottom: 20px;
+    }
+
+    .mobile-chapter {
+        margin-bottom: 60px;
+    }
+
+    .mobile-chapter-title {
+        font-family: 'Playfair Display', serif;
+        font-size: 22px;
+        font-weight: 700;
+        color: #1a1a1a;
+        margin-top: 40px;
+        margin-bottom: 24px;
+        border-bottom: 1px solid rgba(0,0,0,0.06);
+        padding-bottom: 12px;
+    }
+
+    .mobile-chapter-body {
+        font-size: var(--fz);
+        line-height: var(--lh);
+    }
+
+    .mobile-chapter-body :global(p) {
+        margin-bottom: 1.6em;
+        text-align: justify;
+    }
+
+    .mobile-end {
+        text-align: center;
+        padding: 40px 0;
+        color: #888;
+        font-family: 'Space Grotesk', sans-serif;
+        font-size: 14px;
+    }
+
+    .ornament {
+        font-size: 24px;
+        color: #ed6f5c;
+        margin: 16px 0;
+    }
+
+    @media (max-width: 768px) {
+        .reader-container {
+            height: auto !important;
+            width: 100% !important;
+            overflow-y: auto !important;
+            min-height: 100vh;
+            display: block;
+            background: #fdfbf7;
+        }
+
+        .workspace {
+            display: block;
+            height: auto;
+            perspective: none;
+            overflow: visible;
+        }
+
+        .floating-btn.back {
+            top: 16px;
+            left: 16px;
+        }
+
+        .floating-btn.bookmark {
+            top: 16px;
+            right: 16px;
+        }
     }
 </style>
