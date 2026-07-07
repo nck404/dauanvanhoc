@@ -8,18 +8,9 @@
     let mapElement = $state(null);
 
     const regions = [
-        { id: 'dalat', name: 'Đà Lạt', lat: 11.9404, lng: 108.4583, desc: 'Trung tâm văn hóa, lưu giữ nhiều tư liệu quý' },
-        { id: 'lacduong', name: 'Lạc Dương', lat: 12.1158, lng: 108.4316, desc: 'Vùng đất của những bản trường ca K\'Ho' },
-        { id: 'donduong', name: 'Đơn Dương', lat: 11.8020, lng: 108.5721, desc: 'Nơi giao thoa văn hóa các dân tộc bản địa' },
-        { id: 'ductrong', name: 'Đức Trọng', lat: 11.7247, lng: 108.3664, desc: 'Kho tàng sử thi và truyền thuyết' },
-        { id: 'lamha', name: 'Lâm Hà', lat: 11.8318, lng: 108.1965, desc: 'Những câu chuyện kể dân gian đặc sắc' },
-        { id: 'damrong', name: 'Đam Rông', lat: 12.0163, lng: 108.1408, desc: 'Vùng đất của những huyền thoại núi rừng' },
-        { id: 'dilinh', name: 'Di Linh', lat: 11.5833, lng: 108.0667, desc: 'Cội nguồn văn hóa K\'Ho, Mạ' },
-        { id: 'baolam', name: 'Bảo Lâm', lat: 11.6601, lng: 107.7289, desc: 'Nghệ thuật diễn xướng dân gian' },
-        { id: 'baoloc', name: 'Bảo Lộc', lat: 11.5471, lng: 107.8066, desc: 'Văn học dân gian' },
-        { id: 'dahuoai', name: 'Đạ Huoai', lat: 11.4162, lng: 107.5670, desc: 'Truyền thuyết về cội nguồn' },
-        { id: 'dateh', name: 'Đạ Tẻh', lat: 11.5583, lng: 107.5312, desc: 'Những câu hát giao duyên' },
-        { id: 'cattien', name: 'Cát Tiên', lat: 11.5658, lng: 107.3888, desc: 'Di sản văn hóa Óc Eo và truyền thuyết Mạ' }
+        { id: 'lamdong', name: 'Lâm Đồng', lat: 11.75, lng: 108.2, desc: 'Vùng đất của sử thi Lang Biang và những bản trường ca K\'Ho, Mạ' },
+        { id: 'daknong', name: 'Đắk Nông', lat: 12.0, lng: 107.7, desc: 'Nơi lưu giữ sử thi Ot Ndrong cổ xưa của người M\'Nông' },
+        { id: 'binhthuan', name: 'Bình Thuận', lat: 11.1, lng: 108.1, desc: 'Cội nguồn văn hóa Chăm pa cổ kính và những truyền thuyết biển cả' }
     ];
 
     let activeRegion = $state(regions[0]);
@@ -47,7 +38,7 @@
             
             const map = L.map(mapElement, {
                 zoomControl: false
-            }).setView([11.75, 108.0], 9);
+            }).setView([11.6, 108.0], 8);
 
             L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
                 attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
@@ -85,7 +76,7 @@
 
                 marker.on('click', () => {
                     activeRegion = region;
-                    map.flyTo([region.lat, region.lng], 10, { duration: 0.8 });
+                    map.flyTo([region.lat, region.lng], 9, { duration: 0.8 });
                     
                     Object.values(markers).forEach(m => m.setIcon(customIcon));
                     marker.setIcon(activeIcon);
@@ -330,7 +321,7 @@
     }
 
     .work-item:hover .work-cover img {
-        filter: grayscale(100%) sepia(30%);
+        filter: grayscale(0%);
     }
 
     .work-placeholder {

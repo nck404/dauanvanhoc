@@ -11,11 +11,11 @@
 </script>
 
 <svelte:head>
-    <title>Bản đồ Văn học Lâm Đồng - Dấu Ấn Văn Học</title>
+    <title>Bản đồ Văn học 3 Tỉnh - Dấu Ấn Văn Học</title>
 </svelte:head>
 
 <div class="side-rail left">
-    <div class="rail-text">Bản đồ Văn học Lâm Đồng</div>
+    <div class="rail-text">Bản đồ Văn học 3 Tỉnh</div>
 </div>
 <div class="side-rail right">
     <div class="rail-text">Vol. 01 / Sổ Số 01 - MMXXVI</div>
@@ -29,11 +29,11 @@
         </div>
         
         <h1 class="page-title">
-            Địa lý <em class="page-accent">Văn học</em> Lâm Đồng<span class="page-dot">.</span>
+            Địa lý <em class="page-accent">Văn học</em> Nam Tây Nguyên & Duyên hải<span class="page-dot">.</span>
         </h1>
         
         <p class="page-lead">
-            Khám phá kho tàng văn học dân gian, truyền thuyết và sử thi theo từng địa danh cụ thể trên bản đồ tỉnh Lâm Đồng.
+            Khám phá kho tàng văn học dân gian, truyền thuyết và sử thi theo từng địa danh cụ thể trên bản đồ các tỉnh Lâm Đồng, Đắk Nông và Bình Thuận.
         </p>
     </header>
 

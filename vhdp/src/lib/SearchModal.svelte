@@ -117,20 +117,20 @@
                     {@const showVideo = activeFilter === 'all' || activeFilter === 'video'}
                     
                     {@const filteredTruyenChu = truyenChu.filter(b => 
-                        b.title?.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                        b.author?.toLowerCase().includes(searchQuery.toLowerCase())
+                        (b.title || "").toLowerCase().includes(searchQuery.toLowerCase()) || 
+                        (b.author || "").toLowerCase().includes(searchQuery.toLowerCase())
                     )}
                     {@const filteredTruyenTranh = truyenTranh.filter(b => 
-                        b.title?.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                        b.author?.toLowerCase().includes(searchQuery.toLowerCase())
+                        (b.title || "").toLowerCase().includes(searchQuery.toLowerCase()) || 
+                        (b.author || "").toLowerCase().includes(searchQuery.toLowerCase())
                     )}
                     {@const filteredAudios = audios.filter(a => 
-                        a.title?.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                        a.author?.toLowerCase().includes(searchQuery.toLowerCase())
+                        (a.title || "").toLowerCase().includes(searchQuery.toLowerCase()) || 
+                        (a.author || "").toLowerCase().includes(searchQuery.toLowerCase())
                     )}
                     {@const filteredVideos = videos.filter(v => 
-                        v.title?.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                        v.author?.toLowerCase().includes(searchQuery.toLowerCase())
+                        (v.title || "").toLowerCase().includes(searchQuery.toLowerCase()) || 
+                        (v.author || "").toLowerCase().includes(searchQuery.toLowerCase())
                     )}
                     
                     {@const noResults = (!showChu || filteredTruyenChu.length === 0) && (!showTranh || filteredTruyenTranh.length === 0) && (!showAudio || filteredAudios.length === 0) && (!showVideo || filteredVideos.length === 0)}

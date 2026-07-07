@@ -67,8 +67,8 @@
                 </div>
                 
                 <h1 class="hero-title">
-                    Kho lưu trữ<br/>
-                    <em class="hero-accent">văn học</em> địa phương
+                    Hành Trình Tìm về <br/>
+                    <em class="hero-accent">Dấu Ấn </em> Của Văn Học Địa Phương 
                     <span class="hero-location">Lâm Đồng<span class="hero-dot">.</span></span>
                 </h1>
                 
@@ -133,7 +133,7 @@
             <div class="section-ornament">&#x2727; &#x2727; &#x2727; &#x2727;</div>
             <div class="section-tag">Địa lý văn học</div>
             <h2 class="section-title">
-                Khám phá <em class="section-accent">Lâm Đồng</em>
+                Khám phá <em class="section-accent">Vùng Đất Văn Học</em>
             </h2>
         </div>
 
@@ -141,23 +141,23 @@
             <div class="intro-content">
                 <h3 class="intro-heading">Vùng đất của sử thi và huyền thoại</h3>
                 <p class="intro-text">
-                    Lâm Đồng, nằm trên cao nguyên Lang Biang hùng vĩ, không chỉ nổi tiếng với cảnh quan thiên nhiên mộng mơ mà còn là cái nôi của một kho tàng văn học dân gian vô cùng phong phú. Đây là nơi sinh sống lâu đời của các dân tộc bản địa như K'Ho, Mạ, Chu Ru... với những bản trường ca, sử thi, truyện cổ tích và truyền thuyết gắn liền với từng ngọn núi, dòng sông.
+                    Khu vực Lâm Đồng, Đắk Nông và Bình Thuận sở hữu kho tàng văn học dân gian vô cùng phong phú. Đây là nơi lưu giữ sử thi Ot Ndrong cổ xưa của người M'Nông bên dòng Sêrêpốk, những bản trường ca K'Ho, Mạ hùng vĩ trên cao nguyên Lang Biang, cùng cội nguồn văn hóa Chăm pa cổ kính nơi duyên hải Bình Thuận.
                 </p>
                 <p class="intro-text">
-                    Thông qua bản đồ tuyến điểm văn học, độc giả có thể dễ dàng định vị và tiếp cận các tác phẩm văn học, nghệ thuật đặc trưng của từng địa phương thuộc tỉnh Lâm Đồng, từ thành phố Đà Lạt thơ mộng đến các huyện vùng sâu vùng xa chứa đựng nhiều huyền thoại kỳ bí.
+                    Thông qua bản đồ tuyến điểm văn học, độc giả có thể dễ dàng định vị và tiếp cận các tác phẩm văn học, nghệ thuật đặc trưng của từng địa phương thuộc ba tỉnh Lâm Đồng, Đắk Nông và Bình Thuận.
                 </p>
             </div>
             <div class="intro-stat-boxes">
                 <div class="stat-box">
-                    <span class="stat-number">12</span>
-                    <span class="stat-label">Huyện & Thị xã</span>
+                    <span class="stat-number">3</span>
+                    <span class="stat-label">Tỉnh thành</span>
                 </div>
                 <div class="stat-box">
                     <span class="stat-number">100+</span>
                     <span class="stat-label">Tác phẩm số hóa</span>
                 </div>
                 <div class="stat-box">
-                    <span class="stat-number">3+</span>
+                    <span class="stat-number">5+</span>
                     <span class="stat-label">Dân tộc bản địa</span>
                 </div>
             </div>
@@ -334,6 +334,8 @@
 </div>
 
 <style>
+    @import url('https://fonts.googleapis.com/css2?family=Pattaya&family=Space+Grotesk:wght@300..700&display=swap');
+
     .page-container {
         max-width: 1200px;
         margin: 0 auto;
@@ -420,14 +422,16 @@
     }
 
     .hero-title em {
-        font-style: italic;
+        font-family: 'Pattaya', sans-serif;
+        font-style: normal;
         color: var(--newsprint-red);
     }
 
     .hero-location {
+        font-family: 'Pattaya', sans-serif;
         color: #b30000;
         white-space: nowrap;
-        font-weight: 900;
+        font-weight: 400;
     }
 
     .hero-dot {

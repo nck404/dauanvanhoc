@@ -656,6 +656,25 @@
         z-index: 1;
     }
 
+    .mode-page .page-comic-container {
+        min-height: auto;
+        height: calc(100vh - 180px);
+    }
+
+    .mode-page .single-image-viewport {
+        min-height: auto;
+        height: 100%;
+        align-items: center;
+    }
+
+    .mode-page .comic-single-image {
+        max-height: 100%;
+        max-width: 100%;
+        width: auto;
+        height: auto;
+        object-fit: contain;
+    }
+
     .comic-single-image.loaded {
         opacity: 1;
     }
@@ -1030,7 +1049,8 @@
             display: none;
         }
         .comic-navigation-footer {
-            padding: 0 16px;
+            padding: 0 12px;
+            height: 56px;
         }
         .floating-btn.back {
             left: 16px;
@@ -1039,6 +1059,18 @@
         .floating-btn.bookmark {
             right: 16px;
             top: 16px;
+        }
+        .chapter-selector-dropdown, .view-mode-selector {
+            padding: 6px 8px;
+            font-size: 12px;
+        }
+        .nav-ch-btn {
+            padding: 6px 12px;
+            font-size: 12px;
+            gap: 4px;
+        }
+        .nav-ch-indicator {
+            font-size: 12px;
         }
     }
 </style>

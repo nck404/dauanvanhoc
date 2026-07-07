@@ -75,7 +75,7 @@
     }
 
     .book-item:hover .book-cover {
-        filter: grayscale(100%) sepia(50%);
+        filter: grayscale(0%);
         transform: scale(1.02);
     }
 

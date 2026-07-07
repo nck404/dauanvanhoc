@@ -290,22 +290,20 @@
                     const bookW = targetDisplay === "single" ? 600 : 1200;
                     const bookH = 800;
                     
-                    const availW = curW - (curW < 768 ? 20 : 40);
-                    const availH = curH - 80;
+                    const availW = curW - (curW < 768 ? 24 : 60);
+                    const availH = curH - (curW < 768 ? 160 : 180);
                     
                     const scaleW = availW / bookW;
                     const scaleH = availH / bookH;
                     let scale = Math.min(scaleW, scaleH);
                     
-                    // Allow scaling up on large screens for full screen experience, cap at 1.5x
                     if (scale > 1.5) scale = 1.5;
 
                     const viewport = flipbookElement.parentElement;
                     if (viewport) {
-                        // Fallback to transform for maximum compatibility
                         viewport.style.transform = `scale(${scale})`;
-                        viewport.style.transformOrigin = "center top";
-                        viewport.style.zoom = 'normal'; // Reset zoom
+                        viewport.style.transformOrigin = "center center";
+                        viewport.style.zoom = 'normal';
                     }
                 };
 
@@ -1062,10 +1060,9 @@
     .workspace {
         flex: 1;
         display: flex;
-        align-items: flex-start;
+        align-items: center;
         justify-content: center;
         perspective: 2000px;
-        padding-top: 40px;
     }
 
     .flipbook-viewport {
@@ -1231,13 +1228,49 @@
         .comic-navigation-footer {
             padding: 0 16px;
         }
+        .floating-btn {
+            width: 40px;
+            height: 40px;
+            font-size: 18px;
+        }
         .floating-btn.back {
-            left: 16px;
-            top: 16px;
+            left: 12px;
+            top: 12px;
         }
         .floating-btn.bookmark {
-            right: 16px;
-            top: 16px;
+            right: 12px;
+            top: 12px;
+        }
+        .reader-footer-bar {
+            width: calc(100% - 24px);
+            left: 12px;
+            transform: none;
+            bottom: 12px;
+            box-sizing: border-box;
+            justify-content: space-between;
+            gap: 8px;
+            padding: 8px 12px;
+            box-shadow: 2px 2px 0px var(--ink, #15140f);
+        }
+        .page-slider {
+            width: 80px;
+            flex: 1;
+        }
+        .progress-info {
+            flex: 1;
+            justify-content: center;
+            gap: 8px;
+        }
+        .progress-text {
+            font-size: 11px;
+        }
+        .tutorial-spotlight.right .tutorial-text,
+        .tutorial-spotlight.left .tutorial-text {
+            left: 50%;
+            right: auto;
+            transform: translateX(-50%);
+            width: 80%;
+            max-width: 300px;
         }
     }
 

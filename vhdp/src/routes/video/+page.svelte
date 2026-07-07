@@ -13,9 +13,9 @@
     let filteredVideos = $derived(
         videos.filter(v => {
             const matchesSearch = searchQuery ? (
-                v.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                v.author.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                (v.description && v.description.toLowerCase().includes(searchQuery.toLowerCase()))
+                (v.title || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+                (v.author || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+                ((v.description || "").toLowerCase().includes(searchQuery.toLowerCase()))
             ) : true;
 
             if (selectedCategory === "all") return matchesSearch;
