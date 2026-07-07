@@ -112,7 +112,7 @@
                             <a href={(work.type === 'truyện tranh' || work.type === 'comic' || work.type === 'manga') ? `/read-comic/${work.id}` : `/read/${work.id}`} class="work-item">
                                 <div class="work-cover">
                                     {#if work.cover_url}
-                                        <img src={work.cover_url} alt={work.title} />
+                                        <img src={work.cover_url} alt={work.title} loading="lazy" decoding="async" />
                                     {:else}
                                         <div class="work-placeholder">
                                             <i class="bx bx-book"></i>

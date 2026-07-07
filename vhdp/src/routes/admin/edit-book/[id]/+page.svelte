@@ -9,7 +9,14 @@
     let errorMsg = $state("");
     let successMsg = $state("");
 
-    // Cover preview state
+    let title = $state("");
+    let author = $state("");
+    let type = $state("text");
+    let status = $state("ongoing");
+    let category = $state("");
+    let description = $state("");
+    let coverUrl = $state("");
+
     let previewUrl = $state("");
     let coverFile = $state(null);
 
@@ -26,8 +33,7 @@
 
     function coverSrc() {
         if (previewUrl) return previewUrl;
-        if (book?.cover_url) return book.cover_url;
-        if (book?.cover) return book.cover;
+        if (coverUrl) return coverUrl;
         return "/default_cover.jpg";
     }
 
@@ -37,6 +43,13 @@
             if (res.ok) {
                 const data = await res.json();
                 book = data.book;
+                title = book.title || "";
+                author = book.author || "";
+                type = book.type || "text";
+                status = book.status || "ongoing";
+                category = book.category || "";
+                description = book.description || "";
+                coverUrl = book.cover_url || book.cover || "";
             }
         } catch (e) {
             console.error(e);
@@ -55,16 +68,7 @@
         errorMsg = "";
         successMsg = "";
 
-        const formData = new FormData(e.currentTarget);
-        const title = formData.get("title");
-        const author = formData.get("author");
-        const type = formData.get("type");
-        const category = formData.get("category");
-        const description = formData.get("description");
-        const status = formData.get("status");
-        const cover_url_input = formData.get("cover_url");
-
-        let cover_url = cover_url_input;
+        let finalCoverUrl = coverUrl;
 
         if (coverFile) {
             try {
@@ -79,7 +83,7 @@
 
                 if (uploadRes.ok) {
                     const uploadResult = await uploadRes.json();
-                    cover_url = uploadResult.url;
+                    finalCoverUrl = uploadResult.url;
                 } else {
                     errorMsg = "Không thể tải ảnh bìa lên hệ thống";
                     loading = false;
@@ -102,7 +106,7 @@
                     category,
                     description,
                     status,
-                    cover_url
+                    cover_url: finalCoverUrl
                 })
             });
 
@@ -147,8 +151,6 @@
                 onsubmit={handleFormSubmit}
                 class="admin-form"
             >
-                <input type="hidden" name="id" value={book.id} />
-
                 <div class="form-section">
                     <h3>Thông tin cơ bản</h3>
 
@@ -161,7 +163,7 @@
                                 type="text"
                                 required
                                 placeholder="Tên tác phẩm..."
-                                value={book.title ?? ""}
+                                bind:value={title}
                             />
                         </div>
 
@@ -173,7 +175,7 @@
                                 type="text"
                                 required
                                 placeholder="Tên tác giả..."
-                                value={book.author ?? ""}
+                                bind:value={author}
                             />
                         </div>
                     </div>
@@ -184,14 +186,10 @@
                             <select
                                 id="type"
                                 name="type"
-                                value={book.type ?? "text"}
+                                bind:value={type}
                             >
-                                <option value="text"
-                                    >Truyện chữ (Full Text)</option
-                                >
-                                <option value="manga"
-                                    >Truyện tranh (Manga/Comic)</option
-                                >
+                                <option value="text">Truyện chữ (Full Text)</option>
+                                <option value="manga">Truyện tranh (Manga/Comic)</option>
                                 <option value="video">Video</option>
                                 <option value="audio">Audio</option>
                                 <option value="vn">Visual Novel</option>
@@ -203,7 +201,7 @@
                             <select
                                 id="status"
                                 name="status"
-                                value={book.status ?? "ongoing"}
+                                bind:value={status}
                             >
                                 <option value="ongoing">Đang ra</option>
                                 <option value="completed">Hoàn thành</option>
@@ -219,7 +217,7 @@
                             name="category"
                             type="text"
                             placeholder="Ví dụ: Tiên hiệp, Đô thị..."
-                            value={book.category ?? ""}
+                            bind:value={category}
                         />
                     </div>
 
@@ -255,12 +253,12 @@
                                     id="cover_url"
                                     name="cover_url"
                                     placeholder="https://..."
-                                    value={book.cover_url ?? ""}
+                                    bind:value={coverUrl}
                                 />
 
                                 <p class="muted">
                                     Nếu bạn upload file thì hệ thống sẽ ưu tiên
-                                    file upload (tuỳ backend).
+                                    file upload.
                                 </p>
                             </div>
                         </div>
@@ -273,8 +271,8 @@
                             name="description"
                             rows="5"
                             placeholder="Viết vài dòng giới thiệu..."
-                            >{book.description ?? ""}</textarea
-                        >
+                            bind:value={description}
+                        ></textarea>
                     </div>
                 </div>
 
@@ -287,9 +285,9 @@
                 {/if}
 
                 <div class="actions">
-                    <a class="comic-btn comic-btn--ghost comic-btn--md btn secondary" href="/admin/manage-books">Hủy</a>
+                    <a class="btn secondary" href="/admin/manage-books">Hủy</a>
                     <button
-                        class="comic-btn comic-btn--red comic-btn--md btn primary"
+                        class="btn primary"
                         type="submit"
                         disabled={loading}
                     >
@@ -316,99 +314,116 @@
     }
 
     .back-link {
-        color: var(--text-muted);
+        font-family: 'Inter', sans-serif;
+        font-weight: 600;
+        font-size: 13px;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--newsprint-ink);
         display: inline-flex;
         align-items: center;
-        gap: 4px;
-        font-weight: 600;
+        gap: 6px;
         text-decoration: none;
-        padding: 10px 12px;
-        border-radius: 12px;
-        background: rgba(0, 0, 0, 0.03);
+        padding: 8px 16px;
+        border: 1px solid var(--newsprint-ink);
+        background: var(--newsprint-surface);
+        border-radius: 0px;
+    }
+
+    .back-link:hover {
+        background: var(--newsprint-ink);
+        color: var(--newsprint-white);
     }
 
     .title h2 {
         margin: 0;
-        font-size: 22px;
+        font-family: 'Playfair Display', serif;
+        font-size: 28px;
         font-weight: 900;
-        color: var(--text-main);
+        color: var(--newsprint-ink);
     }
 
     .subtitle {
-        margin: 3px 0 0 0;
-        font-size: 13px;
-        color: var(--text-muted);
+        margin: 4px 0 0 0;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 12px;
+        color: var(--newsprint-muted);
     }
 
-    .form-container,
-    .card {
-        background: white;
+    .form-container {
+        background: var(--newsprint-white);
         padding: 32px;
-        border-radius: 20px;
-        border: 1px solid var(--accent-light);
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.03);
+        border: 1px solid var(--newsprint-ink);
+        box-shadow: var(--shadow-hard);
+        border-radius: 0px;
     }
 
     .form-section h3 {
-        font-size: 16px;
-        margin-bottom: 18px;
-        padding-bottom: 12px;
-        border-bottom: 2px solid var(--accent-light);
-        color: var(--accent-dark);
+        font-family: 'Playfair Display', serif;
+        font-size: 18px;
+        font-weight: 700;
+        margin-bottom: 20px;
+        padding-bottom: 8px;
+        border-bottom: 1px solid var(--newsprint-ink);
+        color: var(--newsprint-red);
     }
 
     .input-grid {
         display: grid;
         grid-template-columns: 1fr 1fr;
-        gap: 18px;
+        gap: 20px;
     }
 
     .field {
-        margin-bottom: 18px;
+        margin-bottom: 20px;
     }
 
     .field label {
         display: block;
-        font-size: 14px;
+        font-size: 13px;
         font-weight: 700;
         margin-bottom: 8px;
-        color: var(--text-main);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--newsprint-ink);
     }
 
     .field input,
     .field select,
     .field textarea {
         width: 100%;
-        padding: 12px 14px;
-        border: 2px solid var(--accent-light);
-        border-radius: 12px;
+        padding: 12px;
+        border: 1px solid var(--newsprint-ink);
+        border-radius: 0px;
         font-family: inherit;
         font-size: 15px;
         outline: none;
-        transition: border-color 0.2s ease;
-        background: #fff;
+        transition: all 0.2s ease-out;
+        background: var(--newsprint-white);
+        color: var(--newsprint-ink);
     }
 
     .field input:focus,
     .field select:focus,
     .field textarea:focus {
-        border-color: var(--accent-dark);
+        background: var(--newsprint-surface);
+        border-color: var(--newsprint-red);
     }
 
     .cover-options {
         display: flex;
-        gap: 18px;
+        gap: 20px;
         align-items: flex-start;
     }
 
     .upload-box {
         position: relative;
-        width: 160px;
-        height: 220px;
-        border-radius: 14px;
+        width: 150px;
+        height: 210px;
+        border-radius: 0px;
         overflow: hidden;
-        border: 2px dashed var(--accent-light);
-        background: #fafafa;
+        border: 1px dashed var(--newsprint-ink);
+        background: var(--newsprint-surface);
     }
 
     .upload-box input {
@@ -424,30 +439,34 @@
         height: 100%;
         object-fit: cover;
         display: block;
-        filter: saturate(1.05);
+        filter: grayscale(100%);
+        transition: all 0.2s ease-out;
+    }
+
+    .upload-box:hover .cover-preview {
+        filter: grayscale(0%);
     }
 
     .upload-hint {
         position: absolute;
-        left: 10px;
-        right: 10px;
-        bottom: 10px;
+        left: 0;
+        right: 0;
+        bottom: 0;
         z-index: 1;
-        padding: 10px 12px;
-        border-radius: 12px;
-        background: rgba(0, 0, 0, 0.55);
-        color: #fff;
-        backdrop-filter: blur(6px);
+        padding: 8px;
+        background: rgba(30, 27, 24, 0.85);
+        color: var(--newsprint-white);
+        text-align: center;
     }
 
     .hint-title {
-        font-weight: 800;
-        font-size: 13px;
-        line-height: 1.2;
+        font-weight: 700;
+        font-size: 11px;
     }
+    
     .hint-sub {
-        font-size: 12px;
-        opacity: 0.9;
+        font-size: 10px;
+        opacity: 0.8;
     }
 
     .url-box {
@@ -458,68 +477,86 @@
     }
 
     .url-box span {
-        font-size: 13px;
-        color: var(--text-muted);
+        font-size: 12px;
+        color: var(--newsprint-muted);
         font-style: italic;
     }
 
     .muted {
-        color: var(--text-muted);
-        font-size: 13px;
+        color: var(--newsprint-muted);
+        font-size: 12px;
         margin: 0;
     }
 
     .error-banner {
         background: #fee2e2;
         color: #ef4444;
-        padding: 12px 16px;
-        border-radius: 12px;
+        border: 1px solid #ef4444;
+        padding: 12px;
+        border-radius: 0px;
         margin-top: 16px;
         font-weight: 700;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 13px;
     }
 
     .success-banner {
         background: #dcfce7;
         color: #16a34a;
-        padding: 12px 16px;
-        border-radius: 12px;
+        border: 1px solid #16a34a;
+        padding: 12px;
+        border-radius: 0px;
         margin-top: 16px;
-        font-weight: 800;
+        font-weight: 700;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 13px;
     }
 
     .actions {
         display: flex;
         justify-content: flex-end;
-        gap: 10px;
-        margin-top: 18px;
+        gap: 12px;
+        margin-top: 24px;
     }
 
     .btn {
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        gap: 8px;
-        padding: 12px 16px;
-        text-decoration: none;
+        padding: 12px 24px;
+        font-family: 'Inter', sans-serif;
+        font-weight: 600;
+        font-size: 13px;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        border: 1px solid var(--newsprint-ink);
+        border-radius: 0px;
         cursor: pointer;
-        transition:
-            box-shadow 0.15s ease,
-            transform 0.15s ease,
-            opacity 0.15s ease;
+        transition: all 0.2s ease-out;
     }
 
     .btn.secondary {
-        background: #fff;
-        color: #1a1515;
+        background: transparent;
+        color: var(--newsprint-ink);
+    }
+
+    .btn.secondary:hover {
+        background: var(--newsprint-muted-bg);
     }
 
     .btn.primary {
-        background: #e44232;
-        color: #fff;
+        background: var(--newsprint-red);
+        color: var(--newsprint-white);
+        border-color: var(--newsprint-red);
+    }
+
+    .btn.primary:hover {
+        background: var(--newsprint-white);
+        color: var(--newsprint-red);
     }
 
     .btn:disabled {
-        opacity: 0.55;
+        opacity: 0.5;
         cursor: not-allowed;
     }
 
@@ -532,7 +569,7 @@
         }
         .upload-box {
             width: 100%;
-            height: 260px;
+            height: 240px;
         }
         .actions {
             flex-direction: column-reverse;

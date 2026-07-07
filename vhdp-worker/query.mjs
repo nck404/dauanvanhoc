@@ -6,7 +6,10 @@ const client = createClient({
 });
 
 async function run() {
-    const res = await client.execute("SELECT * FROM books WHERE title = 'test_extract'");
-    console.log(res.rows);
+    const res = await client.execute({
+        sql: "UPDATE books SET cover_url = ? WHERE id = 135",
+        args: ["/uploads/pages/1783020934584-page-0-Ch_ng_Kh_.png"]
+    });
+    console.log("Updated cover result:", res);
 }
 run();

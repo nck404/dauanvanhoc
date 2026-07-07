@@ -115,7 +115,7 @@
                         </div>
                         <div class="cover">
                             {#if audio.cover_url}
-                                <img src={audio.cover_url} alt="Cover" />
+                                <img src={audio.cover_url} alt="Cover" loading="lazy" decoding="async" />
                             {:else}
                                 <div class="cover-placeholder">
                                     <i class="bx bxs-music"></i>
@@ -147,6 +147,8 @@
 </div>
 
 <style>
+    @import url('https://fonts.googleapis.com/css2?family=Pattaya&family=Space+Grotesk:wght@300..700&display=swap');
+
     .audio-page {
         max-width: 1200px;
         margin: 0 auto;
@@ -161,29 +163,12 @@
         grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
         gap: 40px;
         align-items: center;
-        background: linear-gradient(
-            135deg,
-            rgba(255, 255, 255, 0.95),
-            rgba(255, 255, 255, 0.7)
-        );
-        border: 1px solid var(--line);
-        border-radius: 28px;
+        background: var(--newsprint-white);
+        border: 1px solid var(--newsprint-ink);
         padding: 40px;
-        box-shadow: 0 20px 50px rgba(26, 21, 21, 0.12);
+        box-shadow: var(--shadow-hard);
         position: relative;
         overflow: hidden;
-    }
-
-    .hero::after {
-        content: "";
-        position: absolute;
-        inset: 0;
-        background: radial-gradient(
-            70% 60% at 20% 10%,
-            rgba(225, 91, 91, 0.18),
-            rgba(225, 91, 91, 0)
-        );
-        z-index: 0;
     }
 
     .hero-content,
@@ -199,36 +184,36 @@
         font-family: "JetBrains Mono", monospace;
         font-size: 11px;
         text-transform: uppercase;
-        letter-spacing: 0.2em;
+        letter-spacing: 0.15em;
         padding: 6px 14px;
-        border-radius: 999px;
-        background: var(--coral);
-        color: #fff;
-        box-shadow: 0 12px 18px rgba(225, 91, 91, 0.35);
+        border: 1px solid var(--newsprint-ink);
+        background: var(--newsprint-surface);
+        color: var(--newsprint-ink);
     }
 
     .hero h1 {
         font-family: "Space Grotesk", sans-serif;
         font-size: clamp(34px, 4vw, 54px);
         margin: 18px 0 12px;
-        color: var(--ink);
+        color: var(--newsprint-ink);
+        font-weight: 800;
     }
 
     .hero h1 em {
-        font-family: "Playfair Display", serif;
-        font-style: italic;
-        font-weight: 500;
-        color: var(--coral);
+        font-family: "Pattaya", sans-serif;
+        font-style: normal;
+        font-weight: 400;
+        color: var(--newsprint-red);
     }
 
     .dot {
-        color: var(--coral);
+        color: var(--newsprint-red);
     }
 
     .subtitle {
         font-family: "Playfair Display", serif;
         font-style: italic;
-        color: var(--ink-soft);
+        color: var(--newsprint-neutral-600);
         font-size: 18px;
         max-width: 520px;
     }
@@ -241,27 +226,26 @@
     }
 
     .stat {
-        background: rgba(255, 255, 255, 0.9);
-        border: 1px solid var(--line-faint);
-        border-radius: 16px;
+        background: var(--newsprint-white);
+        border: 1px solid var(--newsprint-ink);
         padding: 14px 16px;
         display: flex;
         flex-direction: column;
         gap: 4px;
-        box-shadow: 0 10px 18px rgba(26, 21, 21, 0.08);
+        box-shadow: 2px 2px 0px var(--newsprint-ink);
     }
 
     .stat-label {
         font-size: 10px;
         text-transform: uppercase;
-        letter-spacing: 0.18em;
-        color: var(--ink-faint);
+        letter-spacing: 0.15em;
+        color: var(--newsprint-muted);
         font-family: "JetBrains Mono", monospace;
     }
 
     .stat strong {
         font-size: 18px;
-        color: var(--ink);
+        color: var(--newsprint-ink);
     }
 
     .hero-visual {
@@ -269,34 +253,28 @@
         flex-direction: column;
         align-items: center;
         gap: 18px;
-        background: rgba(26, 21, 21, 0.04);
-        border-radius: 22px;
+        background: var(--newsprint-surface);
         padding: 26px;
-        border: 1px dashed var(--line);
+        border: 1px dashed var(--newsprint-ink);
     }
 
     .reel {
         width: 180px;
         height: 180px;
         border-radius: 50%;
-        background: radial-gradient(
-            circle at 30% 30%,
-            rgba(255, 255, 255, 0.9),
-            rgba(26, 21, 21, 0.08)
-        );
-        border: 1px solid rgba(26, 21, 21, 0.2);
+        background: var(--newsprint-white);
+        border: 1px solid var(--newsprint-ink);
         position: relative;
         display: grid;
         place-items: center;
-        box-shadow: inset 0 10px 30px rgba(26, 21, 21, 0.12);
     }
 
     .reel-core {
         width: 36px;
         height: 36px;
         border-radius: 50%;
-        background: var(--coral);
-        box-shadow: 0 8px 18px rgba(225, 91, 91, 0.4);
+        background: var(--newsprint-red);
+        border: 1px solid var(--newsprint-ink);
     }
 
     .reel-ring {
@@ -304,7 +282,7 @@
         width: 120px;
         height: 120px;
         border-radius: 50%;
-        border: 1px dashed rgba(26, 21, 21, 0.3);
+        border: 1px dashed var(--newsprint-ink);
     }
 
     .wave {
@@ -317,12 +295,7 @@
 
     .wave span {
         height: calc(12px + (var(--i) * 2px));
-        background: linear-gradient(
-            180deg,
-            var(--coral),
-            rgba(225, 91, 91, 0.2)
-        );
-        border-radius: 999px;
+        background: var(--newsprint-red);
         opacity: 0.8;
     }
 
@@ -331,7 +304,7 @@
         font-size: 11px;
         letter-spacing: 0.2em;
         text-transform: uppercase;
-        color: var(--ink-faint);
+        color: var(--newsprint-muted);
     }
 
     .playlist {
@@ -348,13 +321,17 @@
     }
 
     .section-head h2 {
-        font-family: "Space Grotesk", sans-serif;
+        font-family: "Playfair Display", serif;
         font-size: 28px;
-        color: var(--ink);
+        color: var(--newsprint-ink);
+        font-weight: 900;
     }
 
     .section-head p {
-        color: var(--ink-soft);
+        color: var(--newsprint-neutral-600);
+        font-family: "Lora", serif;
+        font-style: italic;
+        font-size: 14px;
     }
 
     .section-actions {
@@ -363,20 +340,24 @@
     }
 
     .chip {
-        border-radius: 999px;
         padding: 8px 16px;
         font-family: "JetBrains Mono", monospace;
         font-size: 11px;
         text-transform: uppercase;
-        letter-spacing: 0.18em;
-        border: 1px solid var(--line);
-        background: var(--coral);
-        color: #fff;
+        letter-spacing: 0.1em;
+        border: 1px solid var(--newsprint-ink);
+        background: var(--newsprint-ink);
+        color: var(--newsprint-bg);
+        transition: all 0.2s ease-out;
     }
 
     .chip-ghost {
         background: transparent;
-        color: var(--ink);
+        color: var(--newsprint-ink);
+    }
+
+    .chip-ghost:hover {
+        background: var(--newsprint-surface);
     }
 
     .list {
@@ -391,37 +372,33 @@
         align-items: center;
         gap: 20px;
         padding: 18px 20px;
-        border-radius: 20px;
-        border: 1px solid var(--line-faint);
-        background: rgba(255, 255, 255, 0.85);
-        box-shadow: 0 16px 30px rgba(26, 21, 21, 0.08);
+        border: 1px solid var(--newsprint-ink);
+        background: var(--newsprint-white);
         text-decoration: none;
         color: inherit;
-        transition:
-            transform 0.2s ease,
-            box-shadow 0.2s ease;
+        transition: all 0.2s ease-out;
     }
 
     .audio-item:hover {
-        transform: translateY(-4px);
-        box-shadow: 0 22px 40px rgba(26, 21, 21, 0.12);
+        background: var(--newsprint-surface);
+        box-shadow: var(--shadow-hard);
+        transform: translate(-2px, -2px);
     }
 
     .audio-item .index {
         font-family: "JetBrains Mono", monospace;
         font-size: 12px;
         letter-spacing: 0.16em;
-        color: var(--ink-faint);
+        color: var(--newsprint-muted);
     }
 
     .cover {
         position: relative;
         width: 120px;
         height: 120px;
-        border-radius: 16px;
         overflow: hidden;
-        background: linear-gradient(135deg, var(--bg-wash), var(--bone));
-        border: 1px solid var(--line-faint);
+        background: var(--newsprint-surface);
+        border: 1px solid var(--newsprint-ink);
         display: grid;
         place-items: center;
     }
@@ -430,21 +407,23 @@
         width: 100%;
         height: 100%;
         object-fit: cover;
+        filter: grayscale(100%);
+        transition: filter 0.3s ease-out;
+    }
+
+    .audio-item:hover .cover img {
+        filter: grayscale(0%);
     }
 
     .cover-placeholder {
         font-size: 34px;
-        color: var(--ink-faint);
+        color: var(--newsprint-muted);
     }
 
     .cover-overlay {
         position: absolute;
         inset: 0;
-        background: linear-gradient(
-            135deg,
-            rgba(225, 91, 91, 0.75),
-            rgba(26, 21, 21, 0.65)
-        );
+        background: rgba(30, 27, 24, 0.4);
         display: grid;
         place-items: center;
         opacity: 0;
@@ -464,27 +443,29 @@
     }
 
     .content h3 {
-        font-family: "Space Grotesk", sans-serif;
-        font-size: 18px;
-        color: var(--ink);
+        font-family: "Playfair Display", serif;
+        font-size: 20px;
+        color: var(--newsprint-ink);
+        font-weight: 700;
     }
 
     .content p {
-        font-family: "Playfair Display", serif;
+        font-family: "Lora", serif;
         font-style: italic;
-        color: var(--ink-mute);
+        color: var(--newsprint-neutral-600);
+        font-size: 14px;
     }
 
     .tag {
         font-family: "JetBrains Mono", monospace;
         font-size: 10px;
         text-transform: uppercase;
-        letter-spacing: 0.18em;
-        color: var(--coral);
-        background: rgba(225, 91, 91, 0.12);
+        letter-spacing: 0.15em;
+        color: var(--newsprint-red);
+        background: var(--newsprint-surface);
         width: fit-content;
         padding: 4px 10px;
-        border-radius: 999px;
+        border: 1px solid var(--newsprint-ink);
     }
 
     .cta {
@@ -499,31 +480,36 @@
         gap: 8px;
         font-family: "JetBrains Mono", monospace;
         font-size: 11px;
-        color: var(--ink-faint);
-        background: rgba(26, 21, 21, 0.05);
+        color: var(--newsprint-ink);
+        background: var(--newsprint-surface);
         padding: 8px 12px;
-        border-radius: 999px;
+        border: 1px solid var(--newsprint-ink);
     }
 
     .arrow {
         width: 36px;
         height: 36px;
-        border-radius: 50%;
         display: grid;
         place-items: center;
-        background: var(--coral);
-        color: #fff;
-        box-shadow: 0 10px 18px rgba(225, 91, 91, 0.35);
+        background: var(--newsprint-white);
+        border: 1px solid var(--newsprint-ink);
+        color: var(--newsprint-ink);
+        transition: all 0.2s ease-out;
+    }
+
+    .audio-item:hover .arrow {
+        background: var(--newsprint-red);
+        color: var(--newsprint-white);
+        border-color: var(--newsprint-red);
     }
 
     .empty {
         text-align: center;
         padding: 60px 20px;
-        background: rgba(255, 255, 255, 0.8);
-        border: 1px dashed var(--line);
-        border-radius: 16px;
+        background: var(--newsprint-white);
+        border: 1px dashed var(--newsprint-ink);
         font-family: "Space Grotesk", sans-serif;
-        color: var(--ink-mute);
+        color: var(--newsprint-muted);
         font-size: 15px;
     }
 

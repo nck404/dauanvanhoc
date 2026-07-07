@@ -166,6 +166,78 @@
         selectedIds = [];
     }
 
+    let syncing = $state(false);
+
+    const targetTitles = [
+        "SỰ TÍCH VỀ NGUỒN GỐC CỦA NGƯỜI M'NÔNG",
+        "SỰ TÍCH QUẢ BẦU",
+        "SỰ TÍCH CÂY NÊU THẦN",
+        "QUẢ BẦU MẸ",
+        "CẬU BÉ BỤNG CHƠ LAN",
+        "CON VƯỢN VÀ THẦN LÚA",
+        "CHÀNG PIỆNG GIẾT CON RỒNG",
+        "CHÀNG K'MBÔNG",
+        "CHUYỆN THẨN LÚA",
+        "CHUYỆN K'TAR LUT-NDUR",
+        "BÀ MẸ KẾ",
+        "Chàng Khỉ",
+        "Chàng khỉ"
+    ];
+
+    async function syncCovers() {
+        if (!confirm("Bạn có chắc muốn đồng bộ ảnh bìa từ trang cuối cho các truyện M'Nông?")) return;
+        syncing = true;
+        errorMsg = "";
+        
+        try {
+            const API_BASE = "https://vhdp-worker.frenda.workers.dev";
+            for (const book of books) {
+                if (targetTitles.includes(book.title)) {
+                    const detailRes = await apiFetch(`/api/books/${book.id}`);
+                    if (!detailRes.ok) continue;
+
+                    const detailData = await detailRes.json();
+                    const chapters = detailData.chapters || [];
+                    const imageUrls = [];
+
+                    for (const ch of chapters) {
+                        const regex = /<img[^>]+src=["']([^"']+)["']/g;
+                        let match;
+                        while ((match = regex.exec(ch.content)) !== null) {
+                            imageUrls.push(match[1]);
+                        }
+                    }
+
+                    if (imageUrls.length > 0) {
+                        let lastImage = imageUrls[imageUrls.length - 1];
+                        if (lastImage.startsWith("/")) {
+                            lastImage = `${API_BASE}${lastImage}`;
+                        }
+
+                        await apiFetch(`/api/books/${book.id}`, {
+                            method: "PUT",
+                            body: JSON.stringify({
+                                title: book.title,
+                                author: book.author,
+                                type: book.type,
+                                category: book.category,
+                                description: book.description,
+                                status: book.status,
+                                cover_url: lastImage
+                            })
+                        });
+                    }
+                }
+            }
+            alert("Đã đồng bộ ảnh bìa thành công!");
+            await reloadAll();
+        } catch (e) {
+            errorMsg = "Lỗi khi đồng bộ ảnh bìa";
+        } finally {
+            syncing = false;
+        }
+    }
+
     let isAllSelected = $derived.by(() => {
         const currentItems = activeTab === "books" ? books : (activeTab === "audios" ? audios : videos);
         if (currentItems.length === 0) return false;
@@ -177,6 +249,12 @@
     <div class="header">
         <h1>Quản lý kho nội dung</h1>
         <div class="header-actions">
+            {#if activeTab === 'books'}
+                <button class="bulk-delete-btn" onclick={syncCovers} disabled={deletingId !== null || syncing} style="background: #f0fdf4; border-color: #bbf7d0; color: #16a34a;">
+                    <i class="bx bx-sync"></i> {syncing ? 'Đang đồng bộ...' : 'Đồng bộ bìa trang cuối'}
+                </button>
+            {/if}
+
             {#if selectedIds.length > 0}
                 <button class="bulk-delete-btn" onclick={deleteSelected} disabled={deletingId !== null}>
                     <i class="bx bx-trash"></i> Xóa đã chọn ({selectedIds.length})

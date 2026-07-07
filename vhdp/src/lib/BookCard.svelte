@@ -12,7 +12,7 @@
     <div class="book-cover-wrapper">
         <div class="book-cover-container">
             {#if displayCover}
-                <img src={displayCover} alt={book.title} class="book-cover" />
+                <img src={displayCover} alt={book.title} class="book-cover" loading="lazy" decoding="async" />
             {:else}
                 <div class="book-cover-placeholder">
                     <div class="halftone-pattern"></div>
