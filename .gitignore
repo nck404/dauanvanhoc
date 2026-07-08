@@ -27,4 +27,6 @@ vite.config.ts.timestamp-*
 /story/
 /package.json
 /package-lock.json
+/net_static/
+
 

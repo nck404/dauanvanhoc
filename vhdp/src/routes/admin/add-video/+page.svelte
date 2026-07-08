@@ -1,6 +1,6 @@
 <script>
     import { onMount } from "svelte";
-    import { apiFetch } from "$lib/api.js";
+    import { apiFetch, API_BASE } from "$lib/api.js";
     import { goto } from "$app/navigation";
 
     let { form } = $props();

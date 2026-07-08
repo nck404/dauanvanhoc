@@ -36,6 +36,8 @@
         if (typeof window !== 'undefined') {
             const L = (await import('leaflet')).default;
             
+            if (!mapElement) return;
+            
             const map = L.map(mapElement, {
                 zoomControl: false
             }).setView([11.6, 108.0], 8);
