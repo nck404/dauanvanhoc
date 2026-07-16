@@ -141,10 +141,10 @@
                     const result = await res.json();
                     
                     const API_BASE = "https://vhdp-worker.frenda.workers.dev";
-                    if (result.audio && result.audio.audio_url && result.audio.audio_url.startsWith('/uploads/')) {
+                    if (result.audio && result.audio.audio_url && result.audio.audio_url.startsWith('/uploads/') && !result.audio.audio_url.startsWith('http')) {
                         result.audio.audio_url = `${API_BASE}${result.audio.audio_url}`;
                     }
-                    if (result.audio && result.audio.cover_url && result.audio.cover_url.startsWith('/uploads/')) {
+                    if (result.audio && result.audio.cover_url && result.audio.cover_url.startsWith('/uploads/') && !result.audio.cover_url.startsWith('http')) {
                         result.audio.cover_url = `${API_BASE}${result.audio.cover_url}`;
                     }
                     
