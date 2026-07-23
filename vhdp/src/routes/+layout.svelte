@@ -81,8 +81,9 @@
         const pathname = page.url.pathname;
         const isAuth = pathname === "/login" || pathname === "/register";
         const isAdminPath = pathname.startsWith("/admin");
+        const isProtected = pathname.startsWith("/library") || pathname.startsWith("/settings") || pathname.startsWith("/forum/");
 
-        if (!currentUser && !isAuth) {
+        if (!currentUser && isProtected) {
             goto(`/login?callback=${encodeURIComponent(pathname + page.url.search)}`);
         } else if (currentUser && isAuth) {
             goto("/");
