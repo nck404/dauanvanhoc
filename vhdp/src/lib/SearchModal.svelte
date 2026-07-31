@@ -28,12 +28,6 @@
 
     onMount(async () => {
         const handleKeyDown = (e) => {
-            if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
-                e.preventDefault();
-                if (!isOpen) {
-                    openSearchModal();
-                }
-            }
             if (e.key === 'Escape' && isOpen) {
                 closeSearchModal();
             }
