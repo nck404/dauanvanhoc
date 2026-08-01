@@ -11,6 +11,43 @@
     let isOpen = $state(false);
     let activeFilter = $state("all");
 
+    let showChu = $derived(activeFilter === 'all' || activeFilter === 'truyen-chu');
+    let showTranh = $derived(activeFilter === 'all' || activeFilter === 'truyen-tranh');
+    let showAudio = $derived(activeFilter === 'all' || activeFilter === 'audio');
+    let showVideo = $derived(activeFilter === 'all' || activeFilter === 'video');
+
+    let filteredTruyenChu = $derived(
+        truyenChu.filter(b => 
+            (b.title || "").toLowerCase().includes(searchQuery.toLowerCase()) || 
+            (b.author || "").toLowerCase().includes(searchQuery.toLowerCase())
+        )
+    );
+    let filteredTruyenTranh = $derived(
+        truyenTranh.filter(b => 
+            (b.title || "").toLowerCase().includes(searchQuery.toLowerCase()) || 
+            (b.author || "").toLowerCase().includes(searchQuery.toLowerCase())
+        )
+    );
+    let filteredAudios = $derived(
+        audios.filter(a => 
+            (a.title || "").toLowerCase().includes(searchQuery.toLowerCase()) || 
+            (a.author || "").toLowerCase().includes(searchQuery.toLowerCase())
+        )
+    );
+    let filteredVideos = $derived(
+        videos.filter(v => 
+            (v.title || "").toLowerCase().includes(searchQuery.toLowerCase()) || 
+            (v.author || "").toLowerCase().includes(searchQuery.toLowerCase())
+        )
+    );
+
+    let noResults = $derived(
+        (!showChu || filteredTruyenChu.length === 0) &&
+        (!showTranh || filteredTruyenTranh.length === 0) &&
+        (!showAudio || filteredAudios.length === 0) &&
+        (!showVideo || filteredVideos.length === 0)
+    );
+
     export function openSearchModal() {
         isOpen = true;
         requestAnimationFrame(() => {
@@ -105,30 +142,6 @@
             
             <div class="spotlight-results">
                 {#if searchQuery.trim() !== ""}
-                    {@const showChu = activeFilter === 'all' || activeFilter === 'truyen-chu'}
-                    {@const showTranh = activeFilter === 'all' || activeFilter === 'truyen-tranh'}
-                    {@const showAudio = activeFilter === 'all' || activeFilter === 'audio'}
-                    {@const showVideo = activeFilter === 'all' || activeFilter === 'video'}
-                    
-                    {@const filteredTruyenChu = truyenChu.filter(b => 
-                        (b.title || "").toLowerCase().includes(searchQuery.toLowerCase()) || 
-                        (b.author || "").toLowerCase().includes(searchQuery.toLowerCase())
-                    )}
-                    {@const filteredTruyenTranh = truyenTranh.filter(b => 
-                        (b.title || "").toLowerCase().includes(searchQuery.toLowerCase()) || 
-                        (b.author || "").toLowerCase().includes(searchQuery.toLowerCase())
-                    )}
-                    {@const filteredAudios = audios.filter(a => 
-                        (a.title || "").toLowerCase().includes(searchQuery.toLowerCase()) || 
-                        (a.author || "").toLowerCase().includes(searchQuery.toLowerCase())
-                    )}
-                    {@const filteredVideos = videos.filter(v => 
-                        (v.title || "").toLowerCase().includes(searchQuery.toLowerCase()) || 
-                        (v.author || "").toLowerCase().includes(searchQuery.toLowerCase())
-                    )}
-                    
-                    {@const noResults = (!showChu || filteredTruyenChu.length === 0) && (!showTranh || filteredTruyenTranh.length === 0) && (!showAudio || filteredAudios.length === 0) && (!showVideo || filteredVideos.length === 0)}
-                    
                     {#if noResults}
                         <div class="no-results">
                             <div class="empty-symbol">§</div>

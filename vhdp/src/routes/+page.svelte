@@ -10,6 +10,7 @@
     let truyenTranh = $state([]);
     let audios = $state([]);
     let videos = $state([]);
+    let totalSaved = $state(0);
     let loaded = $state(false);
 
     onMount(async () => {
@@ -23,6 +24,7 @@
                 truyenTranh = data.truyenTranh || [];
                 audios = data.audios || [];
                 videos = data.videos || [];
+                totalSaved = data.totalSaved || 0;
             }
         } catch (e) {
             console.error(e);
@@ -153,7 +155,7 @@
                     <span class="stat-label">Tỉnh thành</span>
                 </div>
                 <div class="stat-box">
-                    <span class="stat-number">100+</span>
+                    <span class="stat-number">{totalSaved}</span>
                     <span class="stat-label">Tác phẩm số hóa</span>
                 </div>
                 <div class="stat-box">
