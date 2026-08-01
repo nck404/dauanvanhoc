@@ -1,298 +1,286 @@
 <script>
-    import { onMount, onDestroy } from "svelte";
+    import { onMount } from "svelte";
     import { apiFetch } from "$lib/api.js";
 
-    let truyenChu = $state([]);
-    let truyenTranh = $state([]);
-    let audios = $state([]);
-    let videos = $state([]);
-    let searchQuery = $state("");
-    let searchInput = $state(null);
     let isOpen = $state(false);
+    let searchQuery = $state("");
     let activeFilter = $state("all");
-    let isLoading = $state(false);
+    let status = $state("idle");
 
-    let showChu = $derived(activeFilter === 'all' || activeFilter === 'truyen-chu');
-    let showTranh = $derived(activeFilter === 'all' || activeFilter === 'truyen-tranh');
-    let showAudio = $derived(activeFilter === 'all' || activeFilter === 'audio');
-    let showVideo = $derived(activeFilter === 'all' || activeFilter === 'video');
+    let results = $state({ truyenChu: [], truyenTranh: [], audios: [], videos: [] });
 
-    // When searchQuery changes, fetch results from the backend search API
-    $effect(() => {
-        const query = searchQuery.trim();
-        if (query !== "") {
-            const timer = setTimeout(async () => {
-                isLoading = true;
-                try {
-                    const res = await apiFetch(`/api/search?q=${encodeURIComponent(query)}`);
-                    if (res.ok) {
-                        const data = await res.json();
-                        const allBooks = data.books || [];
-                        truyenChu = allBooks.filter(b => {
-                            const t = (b.type || "").toLowerCase().normalize("NFC");
-                            return t.includes("chữ") || t.includes("text") || !t || t.trim() === "";
-                        });
-                        truyenTranh = allBooks.filter(b => {
-                            const t = (b.type || "").toLowerCase().normalize("NFC");
-                            return t.includes("tranh") || t.includes("comic") || t.includes("manga");
-                        });
-                        audios = data.audios || [];
-                        videos = data.videos || [];
-                    }
-                } catch (e) {
-                    console.error("Search fetch error:", e);
-                } finally {
-                    isLoading = false;
-                }
-            }, 300); // 300ms debounce
-            return () => clearTimeout(timer);
-        } else {
-            if (activeFilter === "all") {
-                truyenChu = [];
-                truyenTranh = [];
-                audios = [];
-                videos = [];
-            }
+    let searchInput = $state(null);
+    let debounceTimer = null;
+
+    let showChu = $derived(activeFilter === "all" || activeFilter === "truyen-chu");
+    let showTranh = $derived(activeFilter === "all" || activeFilter === "truyen-tranh");
+    let showAudio = $derived(activeFilter === "all" || activeFilter === "audio");
+    let showVideo = $derived(activeFilter === "all" || activeFilter === "video");
+
+    let hasResults = $derived(
+        (showChu && results.truyenChu.length > 0) ||
+        (showTranh && results.truyenTranh.length > 0) ||
+        (showAudio && results.audios.length > 0) ||
+        (showVideo && results.videos.length > 0)
+    );
+
+    function reset() {
+        results = { truyenChu: [], truyenTranh: [], audios: [], videos: [] };
+        status = "idle";
+    }
+
+    function splitBooks(allBooks) {
+        return {
+            truyenChu: allBooks.filter(b => {
+                const t = (b.type || "").toLowerCase().normalize("NFC");
+                return !t.includes("tranh") && !t.includes("comic") && !t.includes("manga");
+            }),
+            truyenTranh: allBooks.filter(b => {
+                const t = (b.type || "").toLowerCase().normalize("NFC");
+                return t.includes("tranh") || t.includes("comic") || t.includes("manga");
+            })
+        };
+    }
+
+    async function doSearch(q) {
+        status = "loading";
+        try {
+            const res = await apiFetch(`/api/search?q=${encodeURIComponent(q)}`);
+            if (!res.ok) throw new Error("API error");
+            const data = await res.json();
+            const { truyenChu, truyenTranh } = splitBooks(data.books || []);
+            results = { truyenChu, truyenTranh, audios: data.audios || [], videos: data.videos || [] };
+            status = "done";
+        } catch {
+            status = "done";
         }
-    });
+    }
 
-    // When activeFilter changes, load the full list on demand if searchQuery is empty
-    $effect(() => {
-        if (searchQuery.trim() === "" && activeFilter !== "all") {
-            loadCategoryData(activeFilter);
-        }
-    });
-
-    async function loadCategoryData(filter) {
-        isLoading = true;
+    async function doLoadCategory(filter) {
+        status = "loading";
         try {
             if (filter === "truyen-chu") {
                 const res = await apiFetch("/api/books?type=" + encodeURIComponent("truyện chữ") + "&limit=100");
                 if (res.ok) {
                     const data = await res.json();
-                    truyenChu = data.books || [];
+                    results = { ...results, truyenChu: data.books || [] };
                 }
             } else if (filter === "truyen-tranh") {
                 const res = await apiFetch("/api/books?type=" + encodeURIComponent("truyện tranh") + "&limit=100");
                 if (res.ok) {
                     const data = await res.json();
-                    truyenTranh = data.books || [];
+                    results = { ...results, truyenTranh: data.books || [] };
                 }
             } else if (filter === "audio") {
                 const res = await apiFetch("/api/audios");
                 if (res.ok) {
                     const data = await res.json();
-                    audios = data.audios || [];
+                    results = { ...results, audios: data.audios || [] };
                 }
             } else if (filter === "video") {
                 const res = await apiFetch("/api/videos");
                 if (res.ok) {
                     const data = await res.json();
-                    videos = data.videos || [];
+                    results = { ...results, videos: data.videos || [] };
                 }
             }
-        } catch (e) {
-            console.error("Category load error:", e);
-        } finally {
-            isLoading = false;
+            status = "done";
+        } catch {
+            status = "done";
         }
     }
 
-    let filteredTruyenChu = $derived(truyenChu);
-    let filteredTruyenTranh = $derived(truyenTranh);
-    let filteredAudios = $derived(audios);
-    let filteredVideos = $derived(videos);
+    function handleInput() {
+        clearTimeout(debounceTimer);
+        const q = searchQuery.trim();
+        if (q === "") {
+            if (activeFilter === "all") {
+                reset();
+            } else {
+                doLoadCategory(activeFilter);
+            }
+            return;
+        }
+        status = "loading";
+        debounceTimer = setTimeout(() => doSearch(q), 300);
+    }
 
-    let noResults = $derived(
-        (!showChu || filteredTruyenChu.length === 0) &&
-        (!showTranh || filteredTruyenTranh.length === 0) &&
-        (!showAudio || filteredAudios.length === 0) &&
-        (!showVideo || filteredVideos.length === 0)
-    );
+    function setFilter(filter) {
+        activeFilter = filter;
+        const q = searchQuery.trim();
+        if (filter === "all") {
+            if (q === "") {
+                reset();
+            } else {
+                doSearch(q);
+            }
+        } else {
+            if (q === "") {
+                doLoadCategory(filter);
+            } else {
+                doSearch(q);
+            }
+        }
+    }
 
     export function openSearchModal() {
         isOpen = true;
         activeFilter = "all";
-        requestAnimationFrame(() => {
-            searchInput?.focus();
-            searchInput?.select?.();
-        });
+        searchQuery = "";
+        reset();
+        requestAnimationFrame(() => searchInput?.focus());
         document.body.classList.add("search-open");
     }
 
     export function closeSearchModal() {
         isOpen = false;
         searchQuery = "";
+        reset();
         document.body.classList.remove("search-open");
     }
 
-    onMount(async () => {
-        const handleKeyDown = (e) => {
-            if (e.key === 'Escape' && isOpen) {
-                closeSearchModal();
-            }
-        };
-
-        const handleOpenSearch = () => {
-            if (!isOpen) {
-                openSearchModal();
-            }
-        };
-
-        window.addEventListener('keydown', handleKeyDown);
-        window.addEventListener('open-search', handleOpenSearch);
-
+    onMount(() => {
+        const onKeyDown = (e) => { if (e.key === "Escape" && isOpen) closeSearchModal(); };
+        const onOpen = () => { if (!isOpen) openSearchModal(); };
+        window.addEventListener("keydown", onKeyDown);
+        window.addEventListener("open-search", onOpen);
         return () => {
-            window.removeEventListener('keydown', handleKeyDown);
-            window.removeEventListener('open-search', handleOpenSearch);
+            window.removeEventListener("keydown", onKeyDown);
+            window.removeEventListener("open-search", onOpen);
             document.body.classList.remove("search-open");
         };
     });
 </script>
 
 {#if isOpen}
-    <div class="search-open-global-blur" aria-hidden="true"></div>
+<div class="search-open-global-blur" aria-hidden="true"></div>
+<!-- svelte-ignore a11y_click_events_have_key_events -->
+<!-- svelte-ignore a11y_no_static_element_interactions -->
+<div class="spotlight-overlay" onclick={closeSearchModal}>
     <!-- svelte-ignore a11y_click_events_have_key_events -->
     <!-- svelte-ignore a11y_no_static_element_interactions -->
-    <div class="spotlight-overlay" onclick={closeSearchModal}>
-        <!-- svelte-ignore a11y_click_events_have_key_events -->
-        <!-- svelte-ignore a11y_no_static_element_interactions -->
-        <div class="spotlight-panel" onclick={(e) => e.stopPropagation()}>
-            <div class="spotlight-search">
-                <i class="bx bx-search"></i>
-                <input
-                    type="text"
-                    placeholder="Tìm kiếm tác phẩm hoặc tác giả..."
-                    bind:value={searchQuery}
-                    bind:this={searchInput}
-                    autofocus
-                />
-                <kbd class="spotlight-kbd">ESC</kbd>
-            </div>
-            
-            <div class="search-filters">
-                <button class="search-filter" class:active={activeFilter === 'all'} onclick={() => activeFilter = 'all'}>Tất cả</button>
-                <button class="search-filter" class:active={activeFilter === 'truyen-chu'} onclick={() => activeFilter = 'truyen-chu'}>Truyện chữ ({truyenChu.length})</button>
-                <button class="search-filter" class:active={activeFilter === 'truyen-tranh'} onclick={() => activeFilter = 'truyen-tranh'}>Truyện tranh ({truyenTranh.length})</button>
-                <button class="search-filter" class:active={activeFilter === 'audio'} onclick={() => activeFilter = 'audio'}>Audio ({audios.length})</button>
-                <button class="search-filter" class:active={activeFilter === 'video'} onclick={() => activeFilter = 'video'}>Video ({videos.length})</button>
-            </div>
-            
-            <div class="spotlight-results">
-                {#if isLoading}
-                    <div class="search-helper">
-                        <i class="bx bx-loader-alt bx-spin"></i>
-                        <p>Đang tải dữ liệu...</p>
-                    </div>
-                {:else if searchQuery.trim() !== "" || activeFilter !== "all"}
-                    {#if noResults}
-                        <div class="no-results">
-                            <div class="empty-symbol">§</div>
-                            <p>Không tìm thấy kết quả phù hợp</p>
+    <div class="spotlight-panel" onclick={(e) => e.stopPropagation()}>
+        <div class="spotlight-search">
+            <i class="bx bx-search"></i>
+            <input
+                type="text"
+                placeholder="Tìm kiếm tác phẩm hoặc tác giả..."
+                bind:value={searchQuery}
+                bind:this={searchInput}
+                oninput={handleInput}
+                autofocus
+            />
+            <kbd class="spotlight-kbd">ESC</kbd>
+        </div>
+
+        <div class="search-filters">
+            <button class="search-filter" class:active={activeFilter === "all"} onclick={() => setFilter("all")}>Tất cả</button>
+            <button class="search-filter" class:active={activeFilter === "truyen-chu"} onclick={() => setFilter("truyen-chu")}>Truyện chữ ({results.truyenChu.length})</button>
+            <button class="search-filter" class:active={activeFilter === "truyen-tranh"} onclick={() => setFilter("truyen-tranh")}>Truyện tranh ({results.truyenTranh.length})</button>
+            <button class="search-filter" class:active={activeFilter === "audio"} onclick={() => setFilter("audio")}>Audio ({results.audios.length})</button>
+            <button class="search-filter" class:active={activeFilter === "video"} onclick={() => setFilter("video")}>Video ({results.videos.length})</button>
+        </div>
+
+        <div class="spotlight-results">
+            {#if status === "loading"}
+                <div class="search-helper">
+                    <i class="bx bx-loader-alt bx-spin"></i>
+                    <p>Đang tải...</p>
+                </div>
+            {:else if status === "idle"}
+                <div class="search-helper">
+                    <i class="bx bx-search"></i>
+                    <p>Nhập từ khóa hoặc chọn danh mục</p>
+                </div>
+            {:else if !hasResults}
+                <div class="no-results">
+                    <div class="empty-symbol">§</div>
+                    <p>Không tìm thấy kết quả phù hợp</p>
+                </div>
+            {:else}
+                {#if showChu && results.truyenChu.length > 0}
+                    <div class="result-section">
+                        <div class="result-section-header"><span>Truyện chữ</span></div>
+                        <div class="result-items">
+                            {#each results.truyenChu as book}
+                                <a href={`/read/${book.id}`} class="result-item" onclick={closeSearchModal}>
+                                    <img src={book.cover_url} alt={book.title} class="result-cover" />
+                                    <div class="item-info">
+                                        <span class="item-title">{book.title}</span>
+                                        <span class="item-author">{book.author}</span>
+                                    </div>
+                                    <span class="result-arrow">→</span>
+                                </a>
+                            {/each}
                         </div>
-                    {:else}
-                        {#if showChu && filteredTruyenChu.length > 0}
-                            <div class="result-section">
-                                <div class="result-section-header">
-                                    <span>Truyện chữ</span>
-                                </div>
-                                <div class="result-items">
-                                    {#each filteredTruyenChu as book}
-                                        <a href={(book.type === 'truyện tranh' || book.type === 'comic' || book.type === 'manga') ? `/read-comic/${book.id}` : `/read/${book.id}`} class="result-item" onclick={closeSearchModal}>
-                                            <img src={book.cover_url} alt={book.title} class="result-cover" />
-                                            <div class="item-info">
-                                                <span class="item-title">{book.title}</span>
-                                                <span class="item-author">{book.author}</span>
-                                            </div>
-                                            <span class="result-arrow">→</span>
-                                        </a>
-                                    {/each}
-                                </div>
-                            </div>
-                        {/if}
-                        {#if showTranh && filteredTruyenTranh.length > 0}
-                            <div class="result-section">
-                                <div class="result-section-header">
-                                    <span>Truyện tranh</span>
-                                </div>
-                                <div class="result-items">
-                                    {#each filteredTruyenTranh as book}
-                                        <a href={(book.type === 'truyện tranh' || book.type === 'comic' || book.type === 'manga') ? `/read-comic/${book.id}` : `/read/${book.id}`} class="result-item" onclick={closeSearchModal}>
-                                            <img src={book.cover_url} alt={book.title} class="result-cover" />
-                                            <div class="item-info">
-                                                <span class="item-title">{book.title}</span>
-                                                <span class="item-author">{book.author}</span>
-                                            </div>
-                                            <span class="result-arrow">→</span>
-                                        </a>
-                                    {/each}
-                                </div>
-                            </div>
-                        {/if}
-                        {#if showAudio && filteredAudios.length > 0}
-                            <div class="result-section">
-                                <div class="result-section-header">
-                                    <span>Audio</span>
-                                </div>
-                                <div class="result-items">
-                                    {#each filteredAudios as audio}
-                                        <a href={`/audio/${audio.id}`} class="result-item" onclick={closeSearchModal}>
-                                            {#if audio.cover_url}
-                                                <img src={audio.cover_url} alt={audio.title} class="result-cover" />
-                                            {:else}
-                                                <div class="result-cover media-placeholder">
-                                                    <i class="bx bx-headphone"></i>
-                                                </div>
-                                            {/if}
-                                            <div class="item-info">
-                                                <span class="item-title">{audio.title}</span>
-                                                <span class="item-author">{audio.author}</span>
-                                            </div>
-                                            <span class="result-arrow">→</span>
-                                        </a>
-                                    {/each}
-                                </div>
-                            </div>
-                        {/if}
-                        {#if showVideo && filteredVideos.length > 0}
-                            <div class="result-section">
-                                <div class="result-section-header">
-                                    <span>Video</span>
-                                </div>
-                                <div class="result-items">
-                                    {#each filteredVideos as video}
-                                        <a href={`/video/${video.id}`} class="result-item" onclick={closeSearchModal}>
-                                            {#if video.cover_url}
-                                                <img src={video.cover_url} alt={video.title} class="result-cover" />
-                                            {:else}
-                                                <div class="result-cover media-placeholder">
-                                                    <i class="bx bx-video"></i>
-                                                </div>
-                                            {/if}
-                                            <div class="item-info">
-                                                <span class="item-title">{video.title}</span>
-                                                <span class="item-author">{video.author}</span>
-                                            </div>
-                                            <span class="result-arrow">→</span>
-                                        </a>
-                                    {/each}
-                                </div>
-                            </div>
-                        {/if}
-                    {/if}
-                {:else}
-                    <div class="search-helper">
-                        <i class="bx bx-search"></i>
-                        <p>Nhập từ khóa để bắt đầu tìm kiếm</p>
                     </div>
                 {/if}
-            </div>
+                {#if showTranh && results.truyenTranh.length > 0}
+                    <div class="result-section">
+                        <div class="result-section-header"><span>Truyện tranh</span></div>
+                        <div class="result-items">
+                            {#each results.truyenTranh as book}
+                                <a href={`/read-comic/${book.id}`} class="result-item" onclick={closeSearchModal}>
+                                    <img src={book.cover_url} alt={book.title} class="result-cover" />
+                                    <div class="item-info">
+                                        <span class="item-title">{book.title}</span>
+                                        <span class="item-author">{book.author}</span>
+                                    </div>
+                                    <span class="result-arrow">→</span>
+                                </a>
+                            {/each}
+                        </div>
+                    </div>
+                {/if}
+                {#if showAudio && results.audios.length > 0}
+                    <div class="result-section">
+                        <div class="result-section-header"><span>Audio</span></div>
+                        <div class="result-items">
+                            {#each results.audios as audio}
+                                <a href={`/audio/${audio.id}`} class="result-item" onclick={closeSearchModal}>
+                                    {#if audio.cover_url}
+                                        <img src={audio.cover_url} alt={audio.title} class="result-cover" />
+                                    {:else}
+                                        <div class="result-cover media-placeholder"><i class="bx bx-headphone"></i></div>
+                                    {/if}
+                                    <div class="item-info">
+                                        <span class="item-title">{audio.title}</span>
+                                        <span class="item-author">{audio.author}</span>
+                                    </div>
+                                    <span class="result-arrow">→</span>
+                                </a>
+                            {/each}
+                        </div>
+                    </div>
+                {/if}
+                {#if showVideo && results.videos.length > 0}
+                    <div class="result-section">
+                        <div class="result-section-header"><span>Video</span></div>
+                        <div class="result-items">
+                            {#each results.videos as video}
+                                <a href={`/video/${video.id}`} class="result-item" onclick={closeSearchModal}>
+                                    {#if video.cover_url}
+                                        <img src={video.cover_url} alt={video.title} class="result-cover" />
+                                    {:else}
+                                        <div class="result-cover media-placeholder"><i class="bx bx-video"></i></div>
+                                    {/if}
+                                    <div class="item-info">
+                                        <span class="item-title">{video.title}</span>
+                                        <span class="item-author">{video.author}</span>
+                                    </div>
+                                    <span class="result-arrow">→</span>
+                                </a>
+                            {/each}
+                        </div>
+                    </div>
+                {/if}
+            {/if}
         </div>
     </div>
+</div>
 {/if}
 
 <style>
-    /* Global search overlay styles moved to layout.css or handled globally */
     .spotlight-overlay {
         position: fixed;
         top: 0;
@@ -314,21 +302,14 @@
         max-width: 640px;
         border-radius: 12px;
         border: 2px solid var(--newsprint-ink);
-        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15),
-                    0 0 0 8px rgba(255, 255, 255, 0.5);
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15), 0 0 0 8px rgba(255, 255, 255, 0.5);
         overflow: hidden;
         animation: slideDown 0.2s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
     @keyframes slideDown {
-        from {
-            opacity: 0;
-            transform: translateY(-20px) scale(0.98);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0) scale(1);
-        }
+        from { opacity: 0; transform: translateY(-20px) scale(0.98); }
+        to { opacity: 1; transform: translateY(0) scale(1); }
     }
 
     .spotlight-search {
@@ -378,11 +359,9 @@
         padding: 12px 24px;
         border-bottom: 2px solid var(--newsprint-neutral-200);
         overflow-x: auto;
-        scrollbar-width: none; /* Firefox */
+        scrollbar-width: none;
     }
-    .search-filters::-webkit-scrollbar {
-        display: none; /* Chrome/Safari */
-    }
+    .search-filters::-webkit-scrollbar { display: none; }
 
     .search-filter {
         font-family: 'JetBrains Mono', monospace;
@@ -400,9 +379,7 @@
         white-space: nowrap;
     }
 
-    .search-filter:hover {
-        background: var(--newsprint-neutral-200);
-    }
+    .search-filter:hover { background: var(--newsprint-neutral-200); }
 
     .search-filter.active {
         background: var(--newsprint-red);
@@ -446,9 +423,7 @@
         margin-bottom: 16px;
     }
 
-    .result-section {
-        margin-bottom: 16px;
-    }
+    .result-section { margin-bottom: 16px; }
 
     .result-section-header {
         padding: 8px 24px;
@@ -469,14 +444,8 @@
         transition: background 0.2s;
     }
 
-    .result-item:hover {
-        background: rgba(0, 0, 0, 0.03);
-    }
-
-    .result-item:hover .result-arrow {
-        transform: translateX(4px);
-        color: var(--newsprint-red);
-    }
+    .result-item:hover { background: rgba(0, 0, 0, 0.03); }
+    .result-item:hover .result-arrow { transform: translateX(4px); color: var(--newsprint-red); }
 
     .result-cover {
         width: 40px;
