@@ -8,6 +8,7 @@
     let chapters = $state([]);
     let isBookmarked = $state(false);
     let loading = $state(true);
+    let isLoaded = $state(false);
 
     let currentChapterIndex = $state(0);
     let viewMode = $state("scroll");

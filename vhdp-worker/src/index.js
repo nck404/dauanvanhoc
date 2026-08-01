@@ -473,22 +473,32 @@ export default {
         args: []
       });
       const truyenTranhRes = await client.execute({
-        sql: "SELECT * FROM books WHERE type IN ('truyện tranh', 'comic') ORDER BY created_at DESC LIMIT 8",
+        sql: "SELECT * FROM books WHERE type IN ('truyện tranh', 'comic', 'manga') ORDER BY created_at DESC LIMIT 8",
         args: []
       });
       const audiosRes = await client.execute("SELECT * FROM audios ORDER BY created_at DESC LIMIT 8");
       const videosRes = await client.execute("SELECT * FROM videos ORDER BY created_at DESC LIMIT 8");
 
-      const booksCount = await client.execute("SELECT COUNT(*) as count FROM books");
-      const audiosCount = await client.execute("SELECT COUNT(*) as count FROM audios");
-      const videosCount = await client.execute("SELECT COUNT(*) as count FROM videos");
-      const totalSaved = (booksCount.rows[0].count || 0) + (audiosCount.rows[0].count || 0) + (videosCount.rows[0].count || 0);
+      const truyenChuCountRes = await client.execute("SELECT COUNT(*) as count FROM books WHERE type IN ('truyện chữ', 'text') OR type IS NULL OR type = ''");
+      const truyenTranhCountRes = await client.execute("SELECT COUNT(*) as count FROM books WHERE type IN ('truyện tranh', 'comic', 'manga')");
+      const audiosCountRes = await client.execute("SELECT COUNT(*) as count FROM audios");
+      const videosCountRes = await client.execute("SELECT COUNT(*) as count FROM videos");
+
+      const truyenChuCount = truyenChuCountRes.rows[0].count || 0;
+      const truyenTranhCount = truyenTranhCountRes.rows[0].count || 0;
+      const audiosCount = audiosCountRes.rows[0].count || 0;
+      const videosCount = videosCountRes.rows[0].count || 0;
+      const totalSaved = truyenChuCount + truyenTranhCount + audiosCount + videosCount;
 
       return respondJson({
         truyenChu: truyenChuRes.rows,
         truyenTranh: truyenTranhRes.rows,
         audios: audiosRes.rows,
         videos: videosRes.rows,
+        truyenChuCount,
+        truyenTranhCount,
+        audiosCount,
+        videosCount,
         totalSaved
       });
     }

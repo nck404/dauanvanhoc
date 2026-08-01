@@ -10,35 +10,51 @@
     let searchInput = $state(null);
     let isOpen = $state(false);
     let activeFilter = $state("all");
+    let isLoading = false;
 
     let showChu = $derived(activeFilter === 'all' || activeFilter === 'truyen-chu');
     let showTranh = $derived(activeFilter === 'all' || activeFilter === 'truyen-tranh');
     let showAudio = $derived(activeFilter === 'all' || activeFilter === 'audio');
     let showVideo = $derived(activeFilter === 'all' || activeFilter === 'video');
 
+    function removeDiacritics(str) {
+        try {
+            if (!str) return "";
+            const s = String(str);
+            if (typeof s.normalize !== "function") return s;
+            return s
+                .normalize("NFD")
+                .replace(/[\u0300-\u036f]/g, "")
+                .replace(/đ/g, "d")
+                .replace(/Đ/g, "D");
+        } catch (e) {
+            return String(str);
+        }
+    }
+
+    function matchSearch(text, query) {
+        try {
+            if (!text || !query) return false;
+            const cleanText = removeDiacritics(String(text).toLowerCase());
+            const cleanQuery = removeDiacritics(String(query).toLowerCase());
+            return cleanText.includes(cleanQuery);
+        } catch (err) {
+            console.error("SearchModal matchSearch error:", err);
+            return false;
+        }
+    }
+
     let filteredTruyenChu = $derived(
-        truyenChu.filter(b => 
-            (b.title || "").toLowerCase().includes(searchQuery.toLowerCase()) || 
-            (b.author || "").toLowerCase().includes(searchQuery.toLowerCase())
-        )
+        truyenChu.filter(b => matchSearch(b.title, searchQuery) || matchSearch(b.author, searchQuery))
     );
     let filteredTruyenTranh = $derived(
-        truyenTranh.filter(b => 
-            (b.title || "").toLowerCase().includes(searchQuery.toLowerCase()) || 
-            (b.author || "").toLowerCase().includes(searchQuery.toLowerCase())
-        )
+        truyenTranh.filter(b => matchSearch(b.title, searchQuery) || matchSearch(b.author, searchQuery))
     );
     let filteredAudios = $derived(
-        audios.filter(a => 
-            (a.title || "").toLowerCase().includes(searchQuery.toLowerCase()) || 
-            (a.author || "").toLowerCase().includes(searchQuery.toLowerCase())
-        )
+        audios.filter(a => matchSearch(a.title, searchQuery) || matchSearch(a.author, searchQuery))
     );
     let filteredVideos = $derived(
-        videos.filter(v => 
-            (v.title || "").toLowerCase().includes(searchQuery.toLowerCase()) || 
-            (v.author || "").toLowerCase().includes(searchQuery.toLowerCase())
-        )
+        videos.filter(v => matchSearch(v.title, searchQuery) || matchSearch(v.author, searchQuery))
     );
 
     let noResults = $derived(
@@ -49,12 +65,20 @@
     );
 
     async function loadSearchData() {
-        // Fetch books
+        if (isLoading) return;
+        isLoading = true;
+
         try {
-            const res = await apiFetch("/api/books?limit=999");
-            if (res.ok) {
-                const data = await res.json();
+            const [booksRes, audiosRes, videosRes] = await Promise.all([
+                apiFetch("/api/books?limit=999"),
+                apiFetch("/api/audios"),
+                apiFetch("/api/videos")
+            ]);
+
+            if (booksRes.ok) {
+                const data = await booksRes.json();
                 const allBooks = data.books || [];
+                console.log("SearchModal: Fetched books count = ", allBooks.length);
                 truyenChu = allBooks.filter(b => {
                     const t = (b.type || "").toLowerCase().normalize("NFC");
                     return t.includes("chữ") || t.includes("text") || !t || t.trim() === "";
@@ -63,31 +87,25 @@
                     const t = (b.type || "").toLowerCase().normalize("NFC");
                     return t.includes("tranh") || t.includes("comic") || t.includes("manga");
                 });
+                console.log("SearchModal: truyenChu filtered = ", truyenChu.length);
+                console.log("SearchModal: truyenTranh filtered = ", truyenTranh.length);
             }
-        } catch (e) {
-            console.error("Error fetching books in search modal:", e);
-        }
 
-        // Fetch audios
-        try {
-            const res = await apiFetch("/api/audios");
-            if (res.ok) {
-                const data = await res.json();
+            if (audiosRes.ok) {
+                const data = await audiosRes.json();
                 audios = data.audios || [];
+                console.log("SearchModal: audios count = ", audios.length);
             }
-        } catch (e) {
-            console.error("Error fetching audios in search modal:", e);
-        }
 
-        // Fetch videos
-        try {
-            const res = await apiFetch("/api/videos");
-            if (res.ok) {
-                const data = await res.json();
+            if (videosRes.ok) {
+                const data = await videosRes.json();
                 videos = data.videos || [];
+                console.log("SearchModal: videos count = ", videos.length);
             }
         } catch (e) {
-            console.error("Error fetching videos in search modal:", e);
+            console.error("Error loading search data in search modal:", e);
+        } finally {
+            isLoading = false;
         }
     }
 
@@ -99,8 +117,8 @@
         });
         document.body.classList.add("search-open");
         
-        // Load data if empty
-        if (truyenChu.length === 0 && truyenTranh.length === 0 && audios.length === 0 && videos.length === 0) {
+        // Load data if any list is empty
+        if (truyenChu.length === 0 || truyenTranh.length === 0 || audios.length === 0 || videos.length === 0) {
             loadSearchData();
         }
     }
@@ -160,10 +178,10 @@
             
             <div class="search-filters">
                 <button class="search-filter" class:active={activeFilter === 'all'} onclick={() => activeFilter = 'all'}>Tất cả</button>
-                <button class="search-filter" class:active={activeFilter === 'truyen-chu'} onclick={() => activeFilter = 'truyen-chu'}>Truyện chữ</button>
-                <button class="search-filter" class:active={activeFilter === 'truyen-tranh'} onclick={() => activeFilter = 'truyen-tranh'}>Truyện tranh</button>
-                <button class="search-filter" class:active={activeFilter === 'audio'} onclick={() => activeFilter = 'audio'}>Audio</button>
-                <button class="search-filter" class:active={activeFilter === 'video'} onclick={() => activeFilter = 'video'}>Video</button>
+                <button class="search-filter" class:active={activeFilter === 'truyen-chu'} onclick={() => activeFilter = 'truyen-chu'}>Truyện chữ ({truyenChu.length})</button>
+                <button class="search-filter" class:active={activeFilter === 'truyen-tranh'} onclick={() => activeFilter = 'truyen-tranh'}>Truyện tranh ({truyenTranh.length})</button>
+                <button class="search-filter" class:active={activeFilter === 'audio'} onclick={() => activeFilter = 'audio'}>Audio ({audios.length})</button>
+                <button class="search-filter" class:active={activeFilter === 'video'} onclick={() => activeFilter = 'video'}>Video ({videos.length})</button>
             </div>
             
             <div class="spotlight-results">

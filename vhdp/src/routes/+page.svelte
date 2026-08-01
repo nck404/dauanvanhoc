@@ -10,6 +10,10 @@
     let truyenTranh = $state([]);
     let audios = $state([]);
     let videos = $state([]);
+    let truyenChuCount = $state(0);
+    let truyenTranhCount = $state(0);
+    let audiosCount = $state(0);
+    let videosCount = $state(0);
     let totalSaved = $state(0);
     let loaded = $state(false);
 
@@ -24,6 +28,10 @@
                 truyenTranh = data.truyenTranh || [];
                 audios = data.audios || [];
                 videos = data.videos || [];
+                truyenChuCount = data.truyenChuCount ?? truyenChu.length;
+                truyenTranhCount = data.truyenTranhCount ?? truyenTranh.length;
+                audiosCount = data.audiosCount ?? audios.length;
+                videosCount = data.videosCount ?? videos.length;
                 totalSaved = data.totalSaved || 0;
             }
         } catch (e) {
@@ -39,15 +47,14 @@
 
     const SKELETON_COUNT = 3;
     
-    // Featured works - top 3 from each category
     let featuredTruyenChu = $derived(truyenChu.slice(0, 3));
     let featuredTruyenTranh = $derived(truyenTranh.slice(0, 3));
-    let totalWorks = $derived(truyenChu.length + truyenTranh.length + audios.length + videos.length);
+    let totalWorks = $derived(truyenChuCount + truyenTranhCount + audiosCount + videosCount);
     let mediaTypeSummaries = $derived([
-        { label: "Chữ", count: truyenChu.length },
-        { label: "Manga", count: truyenTranh.length },
-        { label: "Audio", count: audios.length },
-        { label: "Video", count: videos.length }
+        { label: "Chữ", count: truyenChuCount },
+        { label: "Manga", count: truyenTranhCount },
+        { label: "Audio", count: audiosCount },
+        { label: "Video", count: videosCount }
     ]);
 </script>
 

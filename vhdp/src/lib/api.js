@@ -2,9 +2,7 @@ import { writable } from "svelte/store";
 
 export const userStore = writable(null);
 
-export const API_BASE = import.meta.env.DEV
-  ? "http://localhost:8787"
-  : "https://vhdp-worker.frenda.workers.dev";
+export const API_BASE = "https://vhdp-worker.frenda.workers.dev";
 
 export function getToken() {
   if (typeof window !== "undefined") {
