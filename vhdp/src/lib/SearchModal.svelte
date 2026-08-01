@@ -48,6 +48,49 @@
         (!showVideo || filteredVideos.length === 0)
     );
 
+    async function loadSearchData() {
+        // Fetch books
+        try {
+            const res = await apiFetch("/api/books?limit=999");
+            if (res.ok) {
+                const data = await res.json();
+                const allBooks = data.books || [];
+                truyenChu = allBooks.filter(b => {
+                    const t = (b.type || "").toLowerCase().normalize("NFC");
+                    return t.includes("chữ") || t.includes("text") || !t || t.trim() === "";
+                });
+                truyenTranh = allBooks.filter(b => {
+                    const t = (b.type || "").toLowerCase().normalize("NFC");
+                    return t.includes("tranh") || t.includes("comic") || t.includes("manga");
+                });
+            }
+        } catch (e) {
+            console.error("Error fetching books in search modal:", e);
+        }
+
+        // Fetch audios
+        try {
+            const res = await apiFetch("/api/audios");
+            if (res.ok) {
+                const data = await res.json();
+                audios = data.audios || [];
+            }
+        } catch (e) {
+            console.error("Error fetching audios in search modal:", e);
+        }
+
+        // Fetch videos
+        try {
+            const res = await apiFetch("/api/videos");
+            if (res.ok) {
+                const data = await res.json();
+                videos = data.videos || [];
+            }
+        } catch (e) {
+            console.error("Error fetching videos in search modal:", e);
+        }
+    }
+
     export function openSearchModal() {
         isOpen = true;
         requestAnimationFrame(() => {
@@ -55,6 +98,11 @@
             searchInput?.select?.();
         });
         document.body.classList.add("search-open");
+        
+        // Load data if empty
+        if (truyenChu.length === 0 && truyenTranh.length === 0 && audios.length === 0 && videos.length === 0) {
+            loadSearchData();
+        }
     }
 
     export function closeSearchModal() {
@@ -79,30 +127,8 @@
         window.addEventListener('keydown', handleKeyDown);
         window.addEventListener('open-search', handleOpenSearch);
 
-        try {
-            const [booksRes, audiosRes, videosRes] = await Promise.all([
-                apiFetch("/api/books?limit=999"),
-                apiFetch("/api/audios"),
-                apiFetch("/api/videos")
-            ]);
-            
-            if (booksRes.ok) {
-                const data = await booksRes.json();
-                const allBooks = data.books || [];
-                truyenChu = allBooks.filter(b => b.type === 'truyện chữ' || b.type === 'text' || !b.type);
-                truyenTranh = allBooks.filter(b => b.type === 'truyện tranh' || b.type === 'comic' || b.type === 'manga');
-            }
-            if (audiosRes.ok) {
-                const data = await audiosRes.json();
-                audios = data.audios || [];
-            }
-            if (videosRes.ok) {
-                const data = await videosRes.json();
-                videos = data.videos || [];
-            }
-        } catch (e) {
-            console.error(e);
-        }
+        // Prefetch search data
+        loadSearchData();
 
         return () => {
             window.removeEventListener('keydown', handleKeyDown);
