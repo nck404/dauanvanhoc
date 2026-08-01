@@ -217,6 +217,41 @@ export default {
       });
     }
 
+    if (url.pathname === "/api/search" && request.method === "GET") {
+      const q = url.searchParams.get("q") || "";
+      
+      let books = [];
+      let audios = [];
+      let videos = [];
+      
+      if (q.trim() !== "") {
+        const queryPattern = `%${q}%`;
+        const booksRes = await client.execute({
+          sql: "SELECT * FROM books WHERE title LIKE ? OR author LIKE ? OR category LIKE ? LIMIT 50",
+          args: [queryPattern, queryPattern, queryPattern]
+        });
+        books = booksRes.rows;
+        
+        const audiosRes = await client.execute({
+          sql: "SELECT * FROM audios WHERE title LIKE ? OR author LIKE ? LIMIT 50",
+          args: [queryPattern, queryPattern]
+        });
+        audios = audiosRes.rows;
+        
+        const videosRes = await client.execute({
+          sql: "SELECT * FROM videos WHERE title LIKE ? OR author LIKE ? OR description LIKE ? LIMIT 50",
+          args: [queryPattern, queryPattern, queryPattern]
+        });
+        videos = videosRes.rows;
+      }
+      
+      return respondJson({
+        books,
+        audios,
+        videos
+      });
+    }
+
     if (url.pathname === "/api/books" && request.method === "POST") {
       if (!sessionUser || sessionUser.role !== "admin") {
         return respondJson({ error: "Admin access required" }, 403);

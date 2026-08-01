@@ -245,38 +245,78 @@
     });
 </script>
 
-<div class="admin-container">
-    <div class="header">
-        <h1>Quản lý kho nội dung</h1>
-        <div class="header-actions">
+<svelte:head>
+    <title>Quản lý kho lưu trữ - Admin</title>
+</svelte:head>
+
+<div class="side-rail left">
+    <div class="rail-text">Dấu Ấn Văn Học — Tòa Soạn</div>
+</div>
+<div class="side-rail right">
+    <div class="rail-text">Hệ Thống Quản Trị Nội Dung</div>
+</div>
+
+<div class="page-container">
+    <header class="page-header">
+        <div class="header-label">
+            <span class="header-label-bar"></span>
+            <span>Không Gian Quản Trị</span>
+        </div>
+        
+        <div class="header-main-title">
+            <a href="/admin" class="back-link">
+                <i class="bx bx-arrow-back"></i> Quay lại Bảng điều khiển
+            </a>
+            <h1 class="page-title">
+                Quản lý kho <em class="page-accent">Lưu trữ</em><span class="page-dot">.</span>
+            </h1>
+        </div>
+        
+        <p class="page-lead">
+            Theo dõi, chỉnh sửa thông tin, hoặc gỡ bỏ các ấn phẩm sách, truyện tranh, podcast audio và video tư liệu trong hệ thống.
+        </p>
+    </header>
+
+    <div class="action-bar-wrapper">
+        <div class="tabs-container">
+            <button class:active={activeTab === 'books'} onclick={() => switchTab('books')}>
+                Ấn phẩm ({books.length})
+            </button>
+            <button class:active={activeTab === 'audios'} onclick={() => switchTab('audios')}>
+                Audio Podcast ({audios.length})
+            </button>
+            <button class:active={activeTab === 'videos'} onclick={() => switchTab('videos')}>
+                Video Tư liệu ({videos.length})
+            </button>
+        </div>
+
+        <div class="action-buttons-group">
             {#if activeTab === 'books'}
-                <button class="bulk-delete-btn" onclick={syncCovers} disabled={deletingId !== null || syncing} style="background: #f0fdf4; border-color: #bbf7d0; color: #16a34a;">
+                <button class="newsprint-btn newsprint-btn--secondary" onclick={syncCovers} disabled={deletingId !== null || syncing}>
                     <i class="bx bx-sync"></i> {syncing ? 'Đang đồng bộ...' : 'Đồng bộ bìa trang cuối'}
                 </button>
             {/if}
 
             {#if selectedIds.length > 0}
-                <button class="bulk-delete-btn" onclick={deleteSelected} disabled={deletingId !== null}>
+                <button class="newsprint-btn newsprint-btn--red" onclick={deleteSelected} disabled={deletingId !== null}>
                     <i class="bx bx-trash"></i> Xóa đã chọn ({selectedIds.length})
                 </button>
             {/if}
 
             {#if activeTab === 'books'}
-                <div class="book-add-buttons">
-                    <a href="/admin/add-book" class="modern-add-btn">
-                        <i class="bx bx-plus"></i> Thêm sách / truyện chữ
-                    </a>
-                    <a href="/admin/add-manga" class="modern-add-btn comic-add-btn">
-                        <i class="bx bx-image-add"></i> Thêm truyện tranh
-                    </a>
-                </div>
+                <a href="/admin/add-book" class="newsprint-btn newsprint-btn--primary">
+                    <i class="bx bx-plus"></i> Viết truyện chữ
+                </a>
+                <a href="/admin/add-manga" class="newsprint-btn newsprint-btn--secondary add-comic-btn">
+                    <i class="bx bx-image-add"></i> Đăng truyện tranh
+                </a>
             {:else if activeTab === 'audios'}
-                <a href="/admin/add-audio" class="modern-add-btn">
-                    <i class="bx bx-plus"></i> Thêm Audio mới
+                <a href="/admin/add-audio" class="newsprint-btn newsprint-btn--primary">
+                    <i class="bx bx-plus"></i> Phát thanh Podcast
                 </a>
             {:else}
-                <a href="/admin/add-video" class="modern-add-btn">
-                    <i class="bx bx-plus"></i> Thêm Video mới
+                <a href="/admin/add-video" class="newsprint-btn newsprint-btn--primary">
+                    <i class="bx bx-plus"></i> Chiếu Video
                 </a>
             {/if}
         </div>
@@ -286,33 +326,21 @@
         <div class="error-banner">{errorMsg}</div>
     {/if}
 
-    <div class="tabs-container">
-        <button class:active={activeTab === 'books'} onclick={() => switchTab('books')}>
-            Sách & Truyện ({books.length})
-        </button>
-        <button class:active={activeTab === 'audios'} onclick={() => switchTab('audios')}>
-            Audio Sách ({audios.length})
-        </button>
-        <button class:active={activeTab === 'videos'} onclick={() => switchTab('videos')}>
-            Video Tư Liệu ({videos.length})
-        </button>
-    </div>
-
-    <div class="table-container">
+    <div class="table-wrapper">
         {#if activeTab === 'books'}
-            <table>
+            <table class="newsprint-table">
                 <thead>
                     <tr>
                         <th class="checkbox-col">
                             <input type="checkbox" checked={isAllSelected} onchange={toggleSelectAll} />
                         </th>
-                        <th>Bìa</th>
-                        <th>Tiêu đề</th>
+                        <th class="cover-col">Hình bìa</th>
+                        <th>Tác phẩm</th>
                         <th>Tác giả</th>
                         <th>Thể loại</th>
-                        <th>Loại</th>
-                        <th>Ngày tạo</th>
-                        <th class="actions">Thao tác</th>
+                        <th>Định dạng</th>
+                        <th>Ngày phát hành</th>
+                        <th class="actions-col">Thao tác</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -321,7 +349,7 @@
                             <td class="checkbox-col">
                                 <input type="checkbox" checked={selectedIds.includes(book.id)} onchange={() => toggleSelect(book.id)} />
                             </td>
-                            <td>
+                            <td class="cover-col">
                                 <img
                                     src={getCoverSrc(book, 'books')}
                                     alt={book.title}
@@ -329,23 +357,23 @@
                                     onerror={handleCoverError}
                                 />
                             </td>
-                            <td class="book-title">{book.title}</td>
+                            <td class="book-title font-serif">{book.title}</td>
                             <td>{book.author}</td>
-                            <td>{book.category || "N/A"}</td>
+                            <td><span class="category-tag">{book.category || "N/A"}</span></td>
                             <td>
-                                <span class="type-badge {book.type === 'text' || book.type === 'truyện chữ' ? 'text' : 'manga'}">
+                                <span class="format-badge {book.type === 'text' || book.type === 'truyện chữ' ? 'text' : 'manga'} font-mono">
                                     {getTypeLabel(book.type)}
                                 </span>
                             </td>
-                            <td>{formatDate(book.created_at)}</td>
-                            <td class="actions">
+                            <td class="font-mono">{formatDate(book.created_at)}</td>
+                            <td class="actions-col">
                                 <div class="action-group">
-                                    <a href={`/admin/edit-book/${book.id}`} class="icon-btn edit">
+                                    <a href={`/admin/edit-book/${book.id}`} class="action-btn edit-btn">
                                         <i class="bx bx-edit-alt"></i>
                                     </a>
                                     <button
                                         type="button"
-                                        class="icon-btn delete"
+                                        class="action-btn delete-btn"
                                         onclick={() => deleteItem(book.id, book.title, 'books')}
                                         disabled={deletingId !== null}
                                     >
@@ -361,24 +389,24 @@
                     {/each}
                     {#if books.length === 0}
                         <tr>
-                            <td colspan="8" class="empty">Chưa có tác phẩm nào</td>
+                            <td colspan="8" class="empty font-body">Kho lưu trữ chưa có tác phẩm nào</td>
                         </tr>
                     {/if}
                 </tbody>
             </table>
         {:else if activeTab === 'audios'}
-            <table>
+            <table class="newsprint-table">
                 <thead>
                     <tr>
                         <th class="checkbox-col">
                             <input type="checkbox" checked={isAllSelected} onchange={toggleSelectAll} />
                         </th>
-                        <th>Bìa</th>
-                        <th>Tiêu đề</th>
+                        <th class="cover-col">Hình bìa</th>
+                        <th>Tiêu đề Podcast</th>
                         <th>Tác giả / Người đọc</th>
                         <th>Lượt nghe</th>
-                        <th>Ngày tạo</th>
-                        <th class="actions">Thao tác</th>
+                        <th>Ngày đăng</th>
+                        <th class="actions-col">Thao tác</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -387,7 +415,7 @@
                             <td class="checkbox-col">
                                 <input type="checkbox" checked={selectedIds.includes(audio.id)} onchange={() => toggleSelect(audio.id)} />
                             </td>
-                            <td>
+                            <td class="cover-col">
                                 <img
                                     src={getCoverSrc(audio, 'audios')}
                                     alt={audio.title}
@@ -395,18 +423,18 @@
                                     onerror={handleCoverError}
                                 />
                             </td>
-                            <td class="book-title">{audio.title}</td>
+                            <td class="book-title font-serif">{audio.title}</td>
                             <td>{audio.author}</td>
-                            <td>{audio.views || 0}</td>
-                            <td>{formatDate(audio.created_at)}</td>
-                            <td class="actions">
+                            <td class="font-mono">{audio.views || 0}</td>
+                            <td class="font-mono">{formatDate(audio.created_at)}</td>
+                            <td class="actions-col">
                                 <div class="action-group">
-                                    <a href={`/admin/edit-audio/${audio.id}`} class="icon-btn edit">
+                                    <a href={`/admin/edit-audio/${audio.id}`} class="action-btn edit-btn">
                                         <i class="bx bx-edit-alt"></i>
                                     </a>
                                     <button
                                         type="button"
-                                        class="icon-btn delete"
+                                        class="action-btn delete-btn"
                                         onclick={() => deleteItem(audio.id, audio.title, 'audios')}
                                         disabled={deletingId !== null}
                                     >
@@ -422,24 +450,24 @@
                     {/each}
                     {#if audios.length === 0}
                         <tr>
-                            <td colspan="7" class="empty">Chưa có audio nào</td>
+                            <td colspan="7" class="empty font-body">Kho lưu trữ chưa có audio podcast nào</td>
                         </tr>
                     {/if}
                 </tbody>
             </table>
         {:else}
-            <table>
+            <table class="newsprint-table">
                 <thead>
                     <tr>
                         <th class="checkbox-col">
                             <input type="checkbox" checked={isAllSelected} onchange={toggleSelectAll} />
                         </th>
-                        <th>Ảnh bìa</th>
-                        <th>Tiêu đề</th>
+                        <th class="cover-col">Ảnh xem trước</th>
+                        <th>Tiêu đề Video</th>
                         <th>Tác giả / Đạo diễn</th>
                         <th>Lượt xem</th>
-                        <th>Ngày tạo</th>
-                        <th class="actions">Thao tác</th>
+                        <th>Ngày chiếu</th>
+                        <th class="actions-col">Thao tác</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -448,7 +476,7 @@
                             <td class="checkbox-col">
                                 <input type="checkbox" checked={selectedIds.includes(video.id)} onchange={() => toggleSelect(video.id)} />
                             </td>
-                            <td>
+                            <td class="cover-col">
                                 <img
                                     src={getCoverSrc(video, 'videos')}
                                     alt={video.title}
@@ -456,18 +484,18 @@
                                     onerror={handleCoverError}
                                 />
                             </td>
-                            <td class="book-title">{video.title}</td>
+                            <td class="book-title font-serif">{video.title}</td>
                             <td>{video.author}</td>
-                            <td>{video.views || 0}</td>
-                            <td>{formatDate(video.created_at)}</td>
-                            <td class="actions">
+                            <td class="font-mono">{video.views || 0}</td>
+                            <td class="font-mono">{formatDate(video.created_at)}</td>
+                            <td class="actions-col">
                                 <div class="action-group">
-                                    <a href={`/admin/edit-video/${video.id}`} class="icon-btn edit">
+                                    <a href={`/admin/edit-video/${video.id}`} class="action-btn edit-btn">
                                         <i class="bx bx-edit-alt"></i>
                                     </a>
                                     <button
                                         type="button"
-                                        class="icon-btn delete"
+                                        class="action-btn delete-btn"
                                         onclick={() => deleteItem(video.id, video.title, 'videos')}
                                         disabled={deletingId !== null}
                                     >
@@ -483,7 +511,7 @@
                     {/each}
                     {#if videos.length === 0}
                         <tr>
-                            <td colspan="7" class="empty">Chưa có video nào</td>
+                            <td colspan="7" class="empty font-body">Kho lưu trữ chưa có video tư liệu nào</td>
                         </tr>
                     {/if}
                 </tbody>
@@ -493,259 +521,372 @@
 </div>
 
 <style>
-    .admin-container {
-        padding: 40px;
-        max-width: 1200px;
+    .page-container {
+        max-width: 1280px;
         margin: 0 auto;
+        padding: 100px 24px 120px;
+    }
+    
+    .page-header {
+        padding: 60px 0 80px;
+        border-bottom: 4px solid var(--newsprint-ink);
+        margin-bottom: 40px;
     }
 
-    .header {
+    .header-label {
         display: flex;
-        justify-content: space-between;
         align-items: center;
+        gap: 12px;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.25em;
+        color: var(--newsprint-red);
+        margin-bottom: 24px;
+    }
+
+    .header-label-bar {
+        width: 48px;
+        height: 2px;
+        background: var(--newsprint-red);
+    }
+
+    .header-main-title {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        margin-bottom: 24px;
+    }
+
+    .back-link {
+        font-family: 'Inter', sans-serif;
+        font-weight: 600;
+        font-size: 13px;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--newsprint-ink);
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        text-decoration: none;
+        padding: 8px 16px;
+        border: 1px solid var(--newsprint-ink);
+        background: var(--newsprint-surface);
+        width: fit-content;
+    }
+
+    .back-link:hover {
+        background: var(--newsprint-ink);
+        color: var(--newsprint-white);
+    }
+
+    .page-title {
+        font-family: 'Playfair Display', serif;
+        font-weight: 900;
+        font-size: clamp(38px, 4.5vw, 64px);
+        line-height: 1.1;
+        letter-spacing: -0.025em;
+        color: var(--newsprint-ink);
+        margin: 0;
+    }
+
+    .page-title em {
+        font-style: italic;
+        color: var(--newsprint-red);
+    }
+
+    .page-dot {
+        color: #cc0000;
+    }
+
+    .page-lead {
+        font-family: 'Lora', serif;
+        font-size: 16px;
+        line-height: 1.6;
+        color: var(--newsprint-neutral-600);
+        max-width: 60ch;
+        margin: 0;
+    }
+
+    .action-bar-wrapper {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
         margin-bottom: 32px;
     }
 
-    .header h1 {
-        font-size: 28px;
-        font-weight: 800;
-        color: var(--text-main);
-    }
-
-    .header-actions {
-        display: flex;
-        gap: 1rem;
-        align-items: center;
-    }
-    .book-add-buttons {
-        display: flex;
-        gap: 0.75rem;
-    }
-    .comic-add-btn {
-        background: var(--newsprint-blue, #2b6cb0) !important;
-        border-color: var(--newsprint-blue, #2b6cb0) !important;
-    }
-    .comic-add-btn:hover {
-        background: #2c5282 !important;
-    }
-
-    .modern-add-btn {
-        text-decoration: none;
-        padding: 10px 20px;
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        font-size: 14px;
-        font-weight: 600;
-        border-radius: 8px;
-        background: linear-gradient(135deg, #ef4444, #dc2626);
-        color: #ffffff;
-        box-shadow: 0 4px 6px -1px rgba(220, 38, 38, 0.2);
-        transition: all 0.2s ease;
-    }
-
-    .modern-add-btn:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 6px 12px -2px rgba(220, 38, 38, 0.3);
-    }
-
-    .bulk-delete-btn {
-        padding: 10px 20px;
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        font-size: 14px;
-        font-weight: 700;
-        border-radius: 8px;
-        background: #fef2f2;
-        color: #ef4444;
-        border: 1px solid #fca5a5;
-        cursor: pointer;
-        transition: all 0.2s;
-    }
-
-    .bulk-delete-btn:hover {
-        background: #fee2e2;
-        transform: translateY(-1px);
+    @media (min-width: 1024px) {
+        .action-bar-wrapper {
+            flex-direction: row;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
     }
 
     .tabs-container {
         display: flex;
-        gap: 8px;
-        margin-bottom: 24px;
-        border-bottom: 2px solid #e2e8f0;
-        padding-bottom: 8px;
+        gap: 6px;
+        border-bottom: 2px solid var(--newsprint-ink);
+        padding-bottom: 0;
+        width: 100%;
+    }
+
+    @media (min-width: 1024px) {
+        .tabs-container {
+            width: auto;
+        }
     }
 
     .tabs-container button {
-        padding: 10px 20px;
-        font-size: 14px;
+        padding: 12px 20px;
+        font-size: 13px;
         font-weight: 700;
-        color: #64748b;
-        border-radius: 8px 8px 0 0;
-        border: none;
-        background: transparent;
+        color: var(--newsprint-neutral-600);
+        background: var(--newsprint-surface);
+        border: 2px solid var(--newsprint-ink);
+        border-bottom: none;
         cursor: pointer;
         position: relative;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        transition: all 0.15s ease-out;
+        bottom: -2px;
+    }
+
+    .tabs-container button:hover {
+        background: var(--newsprint-muted-bg);
+        color: var(--newsprint-ink);
     }
 
     .tabs-container button.active {
-        color: #ef4444;
+        color: var(--newsprint-white);
+        background: var(--newsprint-ink);
+        border-color: var(--newsprint-ink);
     }
 
-    .tabs-container button.active::after {
-        content: "";
-        position: absolute;
-        bottom: -10px;
-        left: 0;
-        right: 0;
-        height: 3px;
-        background: #ef4444;
+    .action-buttons-group {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
     }
 
-    .table-container {
-        background: white;
-        overflow: hidden;
-        border-radius: 12px;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-        border: 1px solid #f1f5f9;
+    .add-comic-btn {
+        background: var(--newsprint-surface) !important;
+        color: var(--newsprint-ink) !important;
+        border-color: var(--newsprint-ink) !important;
+    }
+    
+    .add-comic-btn:hover {
+        background: var(--newsprint-ink) !important;
+        color: var(--newsprint-white) !important;
     }
 
-    table {
+    .error-banner {
+        background: var(--newsprint-white);
+        color: var(--newsprint-red);
+        border: 2px solid var(--newsprint-red);
+        box-shadow: 4px 4px 0 var(--newsprint-red);
+        padding: 16px 20px;
+        margin-bottom: 32px;
+        font-family: 'JetBrains Mono', monospace;
+        font-weight: 700;
+        font-size: 13px;
+    }
+
+    .table-wrapper {
+        overflow-x: auto;
+        border: 2px solid var(--newsprint-ink);
+        box-shadow: var(--shadow-hard);
+        background: var(--newsprint-white);
+    }
+
+    .newsprint-table {
         width: 100%;
         border-collapse: collapse;
         text-align: left;
     }
 
-    thead {
-        background: #f8fafc;
-        border-bottom: 1px solid #e2e8f0;
-    }
-
-    th {
-        padding: 16px 24px;
-        font-size: 13px;
+    .newsprint-table th {
+        padding: 16px 20px;
+        font-size: 12px;
         text-transform: uppercase;
-        letter-spacing: 0.5px;
-        color: #64748b;
-        font-weight: 700;
+        letter-spacing: 0.08em;
+        color: var(--newsprint-ink);
+        background: var(--newsprint-surface);
+        border-bottom: 2px solid var(--newsprint-ink);
+        border-right: 1px solid var(--newsprint-divider);
+        font-weight: 800;
     }
 
-    td {
-        padding: 16px 24px;
+    .newsprint-table th:last-child {
+        border-right: none;
+    }
+
+    .newsprint-table td {
+        padding: 16px 20px;
         vertical-align: middle;
-        border-bottom: 1px solid #f1f5f9;
+        border-bottom: 1px solid var(--newsprint-divider);
+        border-right: 1px solid var(--newsprint-divider);
         font-size: 14px;
-        color: #334155;
+        color: var(--newsprint-ink-soft);
+        background: var(--newsprint-white);
+    }
+
+    .newsprint-table td:last-child {
+        border-right: none;
+    }
+
+    .newsprint-table tr:last-child td {
+        border-bottom: none;
     }
 
     .checkbox-col {
-        width: 48px;
-        padding-right: 0;
+        width: 50px;
         text-align: center;
     }
 
     .checkbox-col input {
         width: 16px;
         height: 16px;
+        accent-color: var(--newsprint-ink);
         cursor: pointer;
     }
 
+    .cover-col {
+        width: 80px;
+        text-align: center;
+    }
+
     .mini-cover {
-        width: 40px;
-        height: 56px;
-        border-radius: 6px;
+        width: 44px;
+        height: 60px;
+        border: 1px solid var(--newsprint-ink);
         object-fit: cover;
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.15);
     }
 
     .video-cover-mini {
         aspect-ratio: 16/9;
-        height: auto;
+        height: 34px;
         width: 60px;
     }
 
     .book-title {
-        font-weight: 600;
-        color: #1e293b;
-    }
-
-    .type-badge {
-        padding: 4px 10px;
-        border-radius: 6px;
-        font-size: 11px;
+        font-size: 16px;
         font-weight: 700;
+        color: var(--newsprint-ink);
+    }
+
+    .category-tag {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 11px;
+        background: var(--newsprint-surface);
+        border: 1px solid var(--newsprint-divider);
+        padding: 2px 8px;
+        color: var(--newsprint-neutral-700);
+    }
+
+    .format-badge {
         display: inline-block;
-        text-align: center;
+        padding: 4px 8px;
+        font-size: 10px;
+        font-weight: 700;
         text-transform: uppercase;
+        letter-spacing: 0.05em;
+        border: 1px solid var(--newsprint-ink);
     }
 
-    .type-badge.text {
-        background: rgba(16, 185, 129, 0.1);
-        color: #10b981;
+    .format-badge.text {
+        background: var(--newsprint-white);
+        color: var(--newsprint-ink);
     }
 
-    .type-badge.manga {
-        background: rgba(59, 130, 246, 0.1);
-        color: #3b82f6;
+    .format-badge.manga {
+        background: var(--newsprint-ink);
+        color: var(--newsprint-white);
     }
 
-    .actions {
-        text-align: right;
+    .actions-col {
+        width: 120px;
+        text-align: center;
     }
 
     .action-group {
         display: flex;
-        justify-content: flex-end;
+        justify-content: center;
         gap: 8px;
     }
 
-    .icon-btn {
-        width: 36px;
-        height: 36px;
-        border-radius: 8px;
+    .action-btn {
+        width: 34px;
+        height: 34px;
         display: flex;
         align-items: center;
         justify-content: center;
-        border: 1px solid #e2e8f0;
+        border: 1px solid var(--newsprint-ink);
+        background: var(--newsprint-white);
+        color: var(--newsprint-ink);
+        font-size: 16px;
         cursor: pointer;
-        transition: all 0.2s;
-        font-size: 18px;
-        background: #ffffff;
-        color: #64748b;
-        text-decoration: none;
+        transition: all 0.15s ease-out;
     }
 
-    .icon-btn:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.08);
+    .action-btn:hover {
+        transform: translate(-1px, -1px);
+        box-shadow: 2px 2px 0 var(--newsprint-ink);
     }
 
-    .icon-btn.edit:hover {
-        color: #3b82f6;
-        border-color: #bfdbfe;
-        background: #f0f9ff;
+    .action-btn.edit-btn:hover {
+        background: var(--newsprint-surface);
+        color: var(--newsprint-ink);
     }
 
-    .icon-btn.delete:hover {
-        color: #ef4444;
-        border-color: #fca5a5;
-        background: #fef2f2;
+    .action-btn.delete-btn:hover {
+        background: var(--newsprint-red);
+        color: var(--newsprint-white);
+        border-color: var(--newsprint-red);
     }
 
     .empty {
         text-align: center;
-        padding: 60px !important;
-        color: #94a3b8;
+        padding: 60px 20px !important;
+        color: var(--newsprint-neutral-500);
         font-style: italic;
     }
 
-    .error-banner {
-        background: #fee2e2;
-        color: #ef4444;
-        padding: 12px 20px;
-        border-radius: 12px;
-        margin-bottom: 24px;
-        font-weight: 600;
+    .side-rail {
+        position: fixed;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 32px;
+        height: auto;
+        background: transparent;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 5;
+        pointer-events: none;
+    }
+    
+    .side-rail.left { left: 20px; }
+    .side-rail.right { right: 20px; }
+    
+    .rail-text {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 9px;
+        font-weight: 700;
+        letter-spacing: 0.25em;
+        text-transform: uppercase;
+        color: var(--newsprint-neutral-400);
+        transform: rotate(-90deg);
+        white-space: nowrap;
+    }
+
+    @media (max-width: 768px) {
+        .side-rail { display: none; }
+        .page-container { padding: 80px 16px 100px; }
+        .page-header { padding: 40px 0 50px; margin-bottom: 30px; }
+        .page-title { font-size: 32px; }
     }
 </style>

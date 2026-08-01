@@ -8,12 +8,17 @@
     let loaded = $state(false);
     let searchQuery = $state("");
 
+    import Fuse from "fuse.js";
+
+    let fuse = $derived(new Fuse(books, {
+        keys: ["title", "author", "category"],
+        threshold: 0.35
+    }));
+
     let filteredBooks = $derived(
-        books.filter(
-            (book) =>
-                (book.title || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
-                (book.author || "").toLowerCase().includes(searchQuery.toLowerCase()),
-        ),
+        searchQuery.trim() === ""
+            ? books
+            : fuse.search(searchQuery).map(r => r.item)
     );
 
     onMount(async () => {
@@ -65,7 +70,7 @@
             Hàng ngàn tác phẩm văn học chữ, tiểu thuyết lịch sử và thơ ca truyền thống được lưu giữ nguyên vẹn bản điện tử.
         </p>
 
-        <div class="editorial-search">
+        <form class="editorial-search" onsubmit={(e) => e.preventDefault()}>
             <i class="bx bx-search editorial-search-icon"></i>
             <input
                 type="text"
@@ -73,8 +78,8 @@
                 bind:value={searchQuery}
                 class="editorial-search-input"
             />
-            <button class="editorial-search-btn">Tìm kiếm</button>
-        </div>
+            <button type="submit" class="editorial-search-btn">Tìm kiếm</button>
+        </form>
     </header>
 
     <section class="content-section">

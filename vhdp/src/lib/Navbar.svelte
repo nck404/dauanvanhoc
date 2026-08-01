@@ -413,10 +413,6 @@
     }
 
     @media (max-width: 1024px) {
-        .nav-search-btn-wrap {
-            display: none;
-        }
-
         .stats-meta {
             display: none;
         }

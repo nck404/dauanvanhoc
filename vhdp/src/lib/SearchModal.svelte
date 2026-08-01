@@ -10,52 +10,98 @@
     let searchInput = $state(null);
     let isOpen = $state(false);
     let activeFilter = $state("all");
-    let isLoading = false;
+    let isLoading = $state(false);
 
     let showChu = $derived(activeFilter === 'all' || activeFilter === 'truyen-chu');
     let showTranh = $derived(activeFilter === 'all' || activeFilter === 'truyen-tranh');
     let showAudio = $derived(activeFilter === 'all' || activeFilter === 'audio');
     let showVideo = $derived(activeFilter === 'all' || activeFilter === 'video');
 
-    function removeDiacritics(str) {
+    // When searchQuery changes, fetch results from the backend search API
+    $effect(() => {
+        const query = searchQuery.trim();
+        if (query !== "") {
+            const timer = setTimeout(async () => {
+                isLoading = true;
+                try {
+                    const res = await apiFetch(`/api/search?q=${encodeURIComponent(query)}`);
+                    if (res.ok) {
+                        const data = await res.json();
+                        const allBooks = data.books || [];
+                        truyenChu = allBooks.filter(b => {
+                            const t = (b.type || "").toLowerCase().normalize("NFC");
+                            return t.includes("chữ") || t.includes("text") || !t || t.trim() === "";
+                        });
+                        truyenTranh = allBooks.filter(b => {
+                            const t = (b.type || "").toLowerCase().normalize("NFC");
+                            return t.includes("tranh") || t.includes("comic") || t.includes("manga");
+                        });
+                        audios = data.audios || [];
+                        videos = data.videos || [];
+                    }
+                } catch (e) {
+                    console.error("Search fetch error:", e);
+                } finally {
+                    isLoading = false;
+                }
+            }, 300); // 300ms debounce
+            return () => clearTimeout(timer);
+        } else {
+            if (activeFilter === "all") {
+                truyenChu = [];
+                truyenTranh = [];
+                audios = [];
+                videos = [];
+            }
+        }
+    });
+
+    // When activeFilter changes, load the full list on demand if searchQuery is empty
+    $effect(() => {
+        if (searchQuery.trim() === "" && activeFilter !== "all") {
+            loadCategoryData(activeFilter);
+        }
+    });
+
+    async function loadCategoryData(filter) {
+        isLoading = true;
         try {
-            if (!str) return "";
-            const s = String(str);
-            if (typeof s.normalize !== "function") return s;
-            return s
-                .normalize("NFD")
-                .replace(/[\u0300-\u036f]/g, "")
-                .replace(/đ/g, "d")
-                .replace(/Đ/g, "D");
+            if (filter === "truyen-chu") {
+                const res = await apiFetch("/api/books?type=" + encodeURIComponent("truyện chữ") + "&limit=100");
+                if (res.ok) {
+                    const data = await res.json();
+                    truyenChu = data.books || [];
+                }
+            } else if (filter === "truyen-tranh") {
+                const res = await apiFetch("/api/books?type=" + encodeURIComponent("truyện tranh") + "&limit=100");
+                if (res.ok) {
+                    const data = await res.json();
+                    truyenTranh = data.books || [];
+                }
+            } else if (filter === "audio") {
+                const res = await apiFetch("/api/audios");
+                if (res.ok) {
+                    const data = await res.json();
+                    audios = data.audios || [];
+                }
+            } else if (filter === "video") {
+                const res = await apiFetch("/api/videos");
+                if (res.ok) {
+                    const data = await res.json();
+                    videos = data.videos || [];
+                }
+            }
         } catch (e) {
-            return String(str);
+            console.error("Category load error:", e);
+        } finally {
+            isLoading = false;
         }
     }
 
-    function matchSearch(text, query) {
-        try {
-            if (!text || !query) return false;
-            const cleanText = removeDiacritics(String(text).toLowerCase());
-            const cleanQuery = removeDiacritics(String(query).toLowerCase());
-            return cleanText.includes(cleanQuery);
-        } catch (err) {
-            console.error("SearchModal matchSearch error:", err);
-            return false;
-        }
-    }
-
-    let filteredTruyenChu = $derived(
-        truyenChu.filter(b => matchSearch(b.title, searchQuery) || matchSearch(b.author, searchQuery))
-    );
-    let filteredTruyenTranh = $derived(
-        truyenTranh.filter(b => matchSearch(b.title, searchQuery) || matchSearch(b.author, searchQuery))
-    );
-    let filteredAudios = $derived(
-        audios.filter(a => matchSearch(a.title, searchQuery) || matchSearch(a.author, searchQuery))
-    );
-    let filteredVideos = $derived(
-        videos.filter(v => matchSearch(v.title, searchQuery) || matchSearch(v.author, searchQuery))
-    );
+    let filteredTruyenChu = $derived(truyenChu);
+    let filteredTruyenTranh = $derived(truyenTranh);
+    let filteredAudios = $derived(audios);
+    let filteredVideos = $derived(videos);
 
     let noResults = $derived(
         (!showChu || filteredTruyenChu.length === 0) &&
@@ -64,63 +110,14 @@
         (!showVideo || filteredVideos.length === 0)
     );
 
-    async function loadSearchData() {
-        if (isLoading) return;
-        isLoading = true;
-
-        try {
-            const [booksRes, audiosRes, videosRes] = await Promise.all([
-                apiFetch("/api/books?limit=999"),
-                apiFetch("/api/audios"),
-                apiFetch("/api/videos")
-            ]);
-
-            if (booksRes.ok) {
-                const data = await booksRes.json();
-                const allBooks = data.books || [];
-                console.log("SearchModal: Fetched books count = ", allBooks.length);
-                truyenChu = allBooks.filter(b => {
-                    const t = (b.type || "").toLowerCase().normalize("NFC");
-                    return t.includes("chữ") || t.includes("text") || !t || t.trim() === "";
-                });
-                truyenTranh = allBooks.filter(b => {
-                    const t = (b.type || "").toLowerCase().normalize("NFC");
-                    return t.includes("tranh") || t.includes("comic") || t.includes("manga");
-                });
-                console.log("SearchModal: truyenChu filtered = ", truyenChu.length);
-                console.log("SearchModal: truyenTranh filtered = ", truyenTranh.length);
-            }
-
-            if (audiosRes.ok) {
-                const data = await audiosRes.json();
-                audios = data.audios || [];
-                console.log("SearchModal: audios count = ", audios.length);
-            }
-
-            if (videosRes.ok) {
-                const data = await videosRes.json();
-                videos = data.videos || [];
-                console.log("SearchModal: videos count = ", videos.length);
-            }
-        } catch (e) {
-            console.error("Error loading search data in search modal:", e);
-        } finally {
-            isLoading = false;
-        }
-    }
-
     export function openSearchModal() {
         isOpen = true;
+        activeFilter = "all";
         requestAnimationFrame(() => {
             searchInput?.focus();
             searchInput?.select?.();
         });
         document.body.classList.add("search-open");
-        
-        // Load data if any list is empty
-        if (truyenChu.length === 0 || truyenTranh.length === 0 || audios.length === 0 || videos.length === 0) {
-            loadSearchData();
-        }
     }
 
     export function closeSearchModal() {
@@ -144,9 +141,6 @@
 
         window.addEventListener('keydown', handleKeyDown);
         window.addEventListener('open-search', handleOpenSearch);
-
-        // Prefetch search data
-        loadSearchData();
 
         return () => {
             window.removeEventListener('keydown', handleKeyDown);
@@ -185,7 +179,12 @@
             </div>
             
             <div class="spotlight-results">
-                {#if searchQuery.trim() !== ""}
+                {#if isLoading}
+                    <div class="search-helper">
+                        <i class="bx bx-loader-alt bx-spin"></i>
+                        <p>Đang tải dữ liệu...</p>
+                    </div>
+                {:else if searchQuery.trim() !== "" || activeFilter !== "all"}
                     {#if noResults}
                         <div class="no-results">
                             <div class="empty-symbol">§</div>
