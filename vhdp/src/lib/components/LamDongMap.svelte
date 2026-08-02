@@ -15,10 +15,72 @@
 
     let activeRegion = $state(regions[0]);
 
+    const regionWorksNormalized = {
+        lamdong: [
+            "dedatdenguoi",
+            "taoramuonvat",
+            "kechuyenkbung",
+            "kechuyenkmung",
+            "luabapcaot",
+            "nguoihoavoi",
+            "concoctroi",
+            "changkhi",
+            "soden",
+            "mocoivaluonthan"
+        ],
+        binhthuan: [
+            "huyentichvelerijaprong",
+            "chuyentichvelerijaprong",
+            "tamuavatarai",
+            "sutichthanluaraypokeydai",
+            "truyenthuyetvelehoatang",
+            "haianhemngheo",
+            "binukriyahaydapnuoctuytinh",
+            "visaonguoihoigiaokienganthitheovagiong",
+            "bimbipsoroicay",
+            "motansat",
+            "daphamia"
+        ],
+        daknong: [
+            "changkmbong",
+            "changpienggietconrong",
+            "sutichcayneuthan",
+            "caubebungcholan",
+            "chuyenthanlua",
+            "convuonvathanlua",
+            "sutichvenguongoccuanguoimnong",
+            "truyenthuyetvenguongoccuanguoimnong",
+            "sutichquabau",
+            "bameke",
+            "chuyenktarlutndur",
+            "quabaume"
+        ]
+    };
+
+    const normalize = (s) => {
+        if (!s) return "";
+        return s.toLowerCase()
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .replace(/đ/g, "d")
+            .replace(/[^a-z0-9]/g, "");
+    };
+
     let relatedWorks = $derived.by(() => {
         if (!activeRegion) return [];
-        const seed = activeRegion.name.length;
-        return books.filter((_, i) => i % 5 === seed % 5).slice(0, 4);
+        const targetList = regionWorksNormalized[activeRegion.id] || [];
+        const seen = new Set();
+        return books.filter(book => {
+            const norm = normalize(book.title);
+            if (targetList.includes(norm)) {
+                const key = `${norm}-${book.type}`;
+                if (!seen.has(key)) {
+                    seen.add(key);
+                    return true;
+                }
+            }
+            return false;
+        });
     });
 
     onMount(async () => {

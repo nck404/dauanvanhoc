@@ -12,15 +12,15 @@
     });
 </script>
 
-{#if isReadPage && !isNavExpanded}
+{#if isReadPage && !isNavExpanded && !page.url.pathname.startsWith("/read-comic")}
     <button class="nav-pill-indicator" onclick={() => isNavExpanded = true}>
         <div class="pill-line"></div>
     </button>
 {/if}
 
-<nav class="masthead" class:is-read-mode={isReadPage && !isNavExpanded}>
+<nav class="masthead" class:is-read-mode={isReadPage && (!isNavExpanded || page.url.pathname.startsWith("/read-comic"))}>
     <div class="masthead-inner">
-        {#if isReadPage && isNavExpanded}
+        {#if isReadPage && isNavExpanded && !page.url.pathname.startsWith("/read-comic")}
             <button class="nav-close-btn" onclick={() => isNavExpanded = false}>
                 <i class="bx bx-x"></i>
             </button>
