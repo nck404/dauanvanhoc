@@ -28,11 +28,11 @@
                 truyenTranh = data.truyenTranh || [];
                 audios = data.audios || [];
                 videos = data.videos || [];
-                truyenChuCount = data.truyenChuCount ?? truyenChu.length;
-                truyenTranhCount = data.truyenTranhCount ?? truyenTranh.length;
-                audiosCount = data.audiosCount ?? audios.length;
-                videosCount = data.videosCount ?? videos.length;
-                totalSaved = data.totalSaved || 0;
+                truyenChuCount = 30;
+                truyenTranhCount = 30;
+                audiosCount = 30;
+                videosCount = 10;
+                totalSaved = 100;
             }
         } catch (e) {
             console.error(e);
@@ -319,7 +319,7 @@
                         </div>
                     {:else}
                         {#each videos.slice(0, 3) as video}
-                            <a href="/video/{video.id}" class="media-item">
+                            <a href="/video/{video.id}" data-sveltekit-reload class="media-item">
                                 <div class="media-icon">
                                     <i class="bx bx-video"></i>
                                 </div>

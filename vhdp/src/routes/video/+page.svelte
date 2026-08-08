@@ -199,7 +199,7 @@
                 </div>
             {:else}
                 {#each filteredVideos as video (video.id)}
-                    <a href="/video/{video.id}" class="newsprint-card hard-shadow-hover video-card">
+                    <a href="/video/{video.id}" data-sveltekit-reload class="newsprint-card hard-shadow-hover video-card">
                         <div class="cover-box border-b-2 border-[#111111]">
                             {#if video.cover_url}
                                 <img src={video.cover_url} alt="Cover" />

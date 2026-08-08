@@ -324,7 +324,7 @@
                             </div>
                         {:else}
                             {#each recommended as rec}
-                                <a href="/video/{rec.id}" class="recommended-card-horizontal">
+                                <a href="/video/{rec.id}" data-sveltekit-reload class="recommended-card-horizontal">
                                     <div class="rec-thumbnail-box">
                                         {#if rec.cover_url}
                                             <img src={rec.cover_url} alt={rec.title} />
