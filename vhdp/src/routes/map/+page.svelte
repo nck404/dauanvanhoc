@@ -11,29 +11,29 @@
 </script>
 
 <svelte:head>
-    <title>Bản đồ Văn học 3 Tỉnh - Dấu Ấn Văn Học</title>
+    <title>Bản đồ Văn học Dân tộc - Dấu Ấn Văn Học</title>
 </svelte:head>
 
 <div class="side-rail left">
-    <div class="rail-text">Bản đồ Văn học 3 Tỉnh</div>
+    <div class="rail-text">Bản đồ Văn học Dân tộc</div>
 </div>
 <div class="side-rail right">
-    <div class="rail-text">Vol. 01 / Sổ Số 01 - MMXXVI</div>
+    <div class="rail-text">Vol. 01 / Số 01 - MMXXVI</div>
 </div>
 
 <div class="page-container">
     <header class="page-header reveal">
         <div class="header-label">
             <span class="header-label-bar"></span>
-            <span>Bản đồ Tuyến điểm</span>
+            <span>Văn học các Dân tộc</span>
         </div>
         
         <h1 class="page-title">
-            Địa lý <em class="page-accent">Văn học</em> Nam Tây Nguyên & Duyên hải<span class="page-dot">.</span>
+            Bản đồ <em class="page-accent">Văn học</em> Dân tộc Tây Nguyên & Duyên hải<span class="page-dot">.</span>
         </h1>
         
         <p class="page-lead">
-            Khám phá kho tàng văn học dân gian, truyền thuyết và sử thi theo từng địa danh cụ thể trên bản đồ các tỉnh Lâm Đồng, Đắk Nông và Bình Thuận.
+            Khám phá kho tàng văn học dân gian, truyền thuyết và sử thi theo từng dân tộc: người Mạ (Lâm Đồng), người M'nông (Đắk Nông) và người Chăm (Bình Thuận).
         </p>
     </header>
 

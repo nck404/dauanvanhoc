@@ -8,9 +8,9 @@
     let mapElement = $state(null);
 
     const regions = [
-        { id: 'lamdong', name: 'Lâm Đồng', lat: 11.75, lng: 108.2, desc: 'Vùng đất của sử thi Lang Biang và những bản trường ca K\'Ho, Mạ' },
-        { id: 'daknong', name: 'Đắk Nông', lat: 12.0, lng: 107.7, desc: 'Nơi lưu giữ sử thi Ot Ndrong cổ xưa của người M\'Nông' },
-        { id: 'binhthuan', name: 'Bình Thuận', lat: 11.1, lng: 108.1, desc: 'Cội nguồn văn hóa Chăm pa cổ kính và những truyền thuyết biển cả' }
+        { id: 'lamdong', name: 'Dân tộc Mạ', province: 'Lâm Đồng', lat: 11.75, lng: 108.2, desc: 'Vùng đất của những bản trường ca, truyền thuyết độc đáo của người Mạ ở Lâm Đồng' },
+        { id: 'daknong', name: 'Dân tộc M\'nông', province: 'Đắk Nông', lat: 12.0, lng: 107.7, desc: 'Nơi lưu giữ những áng sử thi Ot Ndrong cổ xưa của người M\'nông ở Đắk Nông' },
+        { id: 'binhthuan', name: 'Dân tộc Chăm', province: 'Bình Thuận', lat: 11.1, lng: 108.1, desc: 'Cội nguồn văn hóa nghệ thuật và các truyền thuyết lễ hội truyền thống của người Chăm ở Bình Thuận' }
     ];
 
     let activeRegion = $state(regions[0]);
@@ -161,6 +161,7 @@
         {#if activeRegion}
             <div class="region-header">
                 <h2 class="region-name">{activeRegion.name}</h2>
+                <div class="region-province" style="font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: bold; color: var(--newsprint-neutral-500); text-transform: uppercase; margin-bottom: 8px; letter-spacing: 0.05em;">Địa bàn: {activeRegion.province}</div>
                 <p class="region-desc">{activeRegion.desc}</p>
             </div>
 
