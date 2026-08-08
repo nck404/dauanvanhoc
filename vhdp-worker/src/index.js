@@ -227,19 +227,19 @@ export default {
       if (q.trim() !== "") {
         const queryPattern = `%${q}%`;
         const booksRes = await client.execute({
-          sql: "SELECT * FROM books WHERE title LIKE ? OR author LIKE ? OR category LIKE ? LIMIT 50",
+          sql: "SELECT * FROM books WHERE LOWER(title) LIKE LOWER(?) OR LOWER(author) LIKE LOWER(?) OR LOWER(category) LIKE LOWER(?) LIMIT 50",
           args: [queryPattern, queryPattern, queryPattern]
         });
         books = booksRes.rows;
         
         const audiosRes = await client.execute({
-          sql: "SELECT * FROM audios WHERE title LIKE ? OR author LIKE ? LIMIT 50",
+          sql: "SELECT * FROM audios WHERE LOWER(title) LIKE LOWER(?) OR LOWER(author) LIKE LOWER(?) LIMIT 50",
           args: [queryPattern, queryPattern]
         });
         audios = audiosRes.rows;
         
         const videosRes = await client.execute({
-          sql: "SELECT * FROM videos WHERE title LIKE ? OR author LIKE ? OR description LIKE ? LIMIT 50",
+          sql: "SELECT * FROM videos WHERE LOWER(title) LIKE LOWER(?) OR LOWER(author) LIKE LOWER(?) OR LOWER(description) LIKE LOWER(?) LIMIT 50",
           args: [queryPattern, queryPattern, queryPattern]
         });
         videos = videosRes.rows;
