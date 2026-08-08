@@ -119,9 +119,8 @@
         }
     }
 
-    onMount(async () => {
-        document.body.classList.add("paper-theme");
-        const videoId = page.params.id;
+    async function loadVideo(videoId) {
+        loading = true;
         try {
             const res = await apiFetch(`/api/videos/${videoId}`);
             if (res.ok) {
@@ -136,7 +135,17 @@
         } finally {
             loading = false;
         }
+    }
 
+    $effect(() => {
+        const id = page.params.id;
+        if (id) {
+            loadVideo(id);
+        }
+    });
+
+    onMount(() => {
+        document.body.classList.add("paper-theme");
         return () => {
             document.body.classList.remove("paper-theme");
         };

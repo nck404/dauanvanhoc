@@ -1,6 +1,8 @@
 <script>
     import { onMount } from "svelte";
     import { apiFetch } from "$lib/api.js";
+    import MiniSearch from "minisearch";
+    import { removeVietnameseTones } from "$lib/searchUtils.js";
 
     let isOpen = $state(false);
     let searchQuery = $state("");
@@ -11,6 +13,10 @@
 
     let searchInput = $state(null);
     let debounceTimer = null;
+
+    let allDataLoaded = false;
+    let indexingPromise = null;
+    let miniSearchInstance = null;
 
     let showChu = $derived(activeFilter === "all" || activeFilter === "truyen-chu");
     let showTranh = $derived(activeFilter === "all" || activeFilter === "truyen-tranh");
@@ -42,16 +48,143 @@
         };
     }
 
+    function ensureIndexed() {
+        if (allDataLoaded) return Promise.resolve();
+        if (indexingPromise) return indexingPromise;
+
+        indexingPromise = (async () => {
+            try {
+                const [booksRes, audiosRes, videosRes] = await Promise.all([
+                    apiFetch("/api/books?limit=2000"),
+                    apiFetch("/api/audios"),
+                    apiFetch("/api/videos")
+                ]);
+
+                let books = [];
+                let audios = [];
+                let videos = [];
+
+                if (booksRes.ok) {
+                    const data = await booksRes.json();
+                    books = data.books || [];
+                }
+                if (audiosRes.ok) {
+                    const data = await audiosRes.json();
+                    audios = data.audios || [];
+                }
+                if (videosRes.ok) {
+                    const data = await videosRes.json();
+                    videos = data.videos || [];
+                }
+
+                const documents = [
+                    ...books.map(b => {
+                        const t = (b.type || "").toLowerCase().normalize("NFC");
+                        const isTranh = t.includes("tranh") || t.includes("comic") || t.includes("manga");
+                        return {
+                            id: `book-${b.id}`,
+                            realId: b.id,
+                            type: isTranh ? "truyen-tranh" : "truyen-chu",
+                            title: b.title || "",
+                            author: b.author || "",
+                            category: b.category || "",
+                            cover_url: b.cover_url || "",
+                            description: b.description || ""
+                        };
+                    }),
+                    ...audios.map(a => ({
+                        id: `audio-${a.id}`,
+                        realId: a.id,
+                        type: "audio",
+                        title: a.title || "",
+                        author: a.author || "",
+                        category: "",
+                        cover_url: a.cover_url || "",
+                        description: a.lyrics || ""
+                    })),
+                    ...videos.map(v => ({
+                        id: `video-${v.id}`,
+                        realId: v.id,
+                        type: "video",
+                        title: v.title || "",
+                        author: v.author || "",
+                        category: "",
+                        cover_url: v.cover_url || "",
+                        description: v.description || ""
+                    }))
+                ];
+
+                const MiniSearchConstructor = MiniSearch.default || MiniSearch;
+                miniSearchInstance = new MiniSearchConstructor({
+                    fields: ["title", "author", "category", "description"],
+                    storeFields: ["realId", "type", "title", "author", "cover_url", "category", "description"],
+                    processTerm: (term) => {
+                        const lower = term.toLowerCase();
+                        return [lower, removeVietnameseTones(lower)];
+                    },
+                    searchOptions: {
+                        boost: { title: 2, author: 1.5, category: 1.2 },
+                        fuzzy: 0.2,
+                        prefix: true
+                    }
+                });
+
+                miniSearchInstance.addAll(documents);
+                allDataLoaded = true;
+            } catch (err) {
+                console.error(err);
+                indexingPromise = null;
+            }
+        })();
+
+        return indexingPromise;
+    }
+
     async function doSearch(q) {
         status = "loading";
         try {
-            const res = await apiFetch(`/api/search?q=${encodeURIComponent(q)}`);
-            if (!res.ok) throw new Error("API error");
-            const data = await res.json();
-            const { truyenChu, truyenTranh } = splitBooks(data.books || []);
-            results = { truyenChu, truyenTranh, audios: data.audios || [], videos: data.videos || [] };
+            await ensureIndexed();
+            if (!miniSearchInstance) {
+                const res = await apiFetch(`/api/search?q=${encodeURIComponent(q)}`);
+                if (!res.ok) throw new Error("API error");
+                const data = await res.json();
+                const { truyenChu, truyenTranh } = splitBooks(data.books || []);
+                results = { truyenChu, truyenTranh, audios: data.audios || [], videos: data.videos || [] };
+                status = "done";
+                return;
+            }
+            
+            const searchResults = miniSearchInstance.search(q);
+            const truyenChu = [];
+            const truyenTranh = [];
+            const audios = [];
+            const videos = [];
+            
+            for (const item of searchResults) {
+                const formatted = {
+                    id: item.realId,
+                    title: item.title,
+                    author: item.author,
+                    cover_url: item.cover_url,
+                    category: item.category,
+                    description: item.description,
+                    type: item.type
+                };
+                if (item.type === "truyen-chu") {
+                    truyenChu.push(formatted);
+                } else if (item.type === "truyen-tranh") {
+                    truyenTranh.push(formatted);
+                } else if (item.type === "audio") {
+                    audios.push(formatted);
+                } else if (item.type === "video") {
+                    videos.push(formatted);
+                }
+            }
+            
+            results = { truyenChu, truyenTranh, audios, videos };
             status = "done";
-        } catch {
+        } catch (err) {
+            console.error(err);
             status = "done";
         }
     }
@@ -128,6 +261,7 @@
         activeFilter = "all";
         searchQuery = "";
         reset();
+        ensureIndexed();
         requestAnimationFrame(() => searchInput?.focus());
         document.body.classList.add("search-open");
     }
