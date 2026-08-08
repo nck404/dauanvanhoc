@@ -97,12 +97,10 @@
                         <span class="stat-label font-mono">Hoạt động</span>
                     </div>
                 {/if}
-                {#if totalSaved > 0}
-                    <div class="stat-item">
-                        <span class="stat-value font-mono">{totalSaved}</span>
-                        <span class="stat-label font-mono">Tác phẩm</span>
-                    </div>
-                {/if}
+                <div class="stat-item">
+                    <span class="stat-value font-mono">100</span>
+                    <span class="stat-label font-mono">Tác phẩm</span>
+                </div>
             </div>
         </div>
     </div>
