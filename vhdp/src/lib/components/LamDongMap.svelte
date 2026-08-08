@@ -31,7 +31,7 @@
         binhthuan: [
             "huyentichvelerijaprong",
             "chuyentichvelerijaprong",
-            "tamuavatarai",
+            "tamuvatarai",
             "sutichthanluaraypokeydai",
             "truyenthuyetvelehoatang",
             "haianhemngheo",
