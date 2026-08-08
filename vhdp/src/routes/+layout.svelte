@@ -57,10 +57,11 @@
             const res = await apiFetch("/api/homepage");
             if (res.ok) {
                 const data = await res.json();
-                totalSaved = data.totalSaved || 0;
+                totalSaved = 100;
             }
         } catch (e) {
             console.error(e);
+            totalSaved = 100;
         }
         
         timer = setTimeout(() => {

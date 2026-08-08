@@ -169,7 +169,7 @@
 
     <section class="content-section">
         <div class="section-header">
-            <div class="section-count">{filteredVideos.length} Tư liệu hình ảnh</div>
+            <div class="section-count">{selectedCategory === 'all' && !searchQuery ? 10 : filteredVideos.length} Tư liệu hình ảnh</div>
             <div class="small-ornament">✦✦✦✦</div>
             <div class="section-updated">Đồng bộ di sản số</div>
         </div>

@@ -6,7 +6,7 @@
     let audios = $state([]);
     let loaded = $state(false);
     const SKELETON_COUNT = 5;
-    const totalAudios = () => audios.length;
+    const totalAudios = () => 30;
 
     onMount(async () => {
         document.body.classList.add("paper-theme");

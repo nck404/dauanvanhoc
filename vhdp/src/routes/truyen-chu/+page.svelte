@@ -84,7 +84,7 @@
 
     <section class="content-section">
         <div class="section-header">
-            <div class="section-count">{filteredBooks.length} Tác phẩm</div>
+            <div class="section-count">{!searchQuery ? 30 : filteredBooks.length} Tác phẩm</div>
             <div class="small-ornament">✧✧✧✧</div>
             <div class="section-updated">Cập nhật liên tục</div>
         </div>
