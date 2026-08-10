@@ -8,9 +8,9 @@
     let mapElement = $state(null);
 
     const regions = [
-        { id: 'lamdong', name: 'Dân tộc Mạ', province: 'Lâm Đồng', lat: 11.75, lng: 108.2, desc: 'Vùng đất của những bản trường ca, truyền thuyết độc đáo của người Mạ ở Lâm Đồng' },
-        { id: 'daknong', name: 'Dân tộc M\'nông', province: 'Đắk Nông', lat: 12.0, lng: 107.7, desc: 'Nơi lưu giữ những áng sử thi Ot Ndrong cổ xưa của người M\'nông ở Đắk Nông' },
-        { id: 'binhthuan', name: 'Dân tộc Chăm', province: 'Bình Thuận', lat: 11.1, lng: 108.1, desc: 'Cội nguồn văn hóa nghệ thuật và các truyền thuyết lễ hội truyền thống của người Chăm ở Bình Thuận' }
+        { id: 'lamdong', name: 'Dân tộc Mạ', province: 'Lâm Đồng cũ', lat: 11.75, lng: 108.2, desc: 'Vùng đất của những bản trường ca, truyền thuyết độc đáo của người Mạ ở Lâm Đồng cũ' },
+        { id: 'daknong', name: 'Dân tộc M\'nông', province: 'Đắk Nông cũ', lat: 12.0, lng: 107.7, desc: 'Nơi lưu giữ những áng sử thi Ot Ndrong cổ xưa của người M\'nông ở Đắk Nông cũ' },
+        { id: 'binhthuan', name: 'Dân tộc Chăm', province: 'Bình Thuận cũ', lat: 11.1, lng: 108.1, desc: 'Cội nguồn văn hóa nghệ thuật và các truyền thuyết lễ hội truyền thống của người Chăm ở Bình Thuận cũ' }
     ];
 
     let activeRegion = $state(regions[0]);

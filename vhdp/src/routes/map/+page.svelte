@@ -33,7 +33,7 @@
         </h1>
         
         <p class="page-lead">
-            Khám phá kho tàng văn học dân gian, truyền thuyết và sử thi theo từng dân tộc: người Mạ (Lâm Đồng), người M'nông (Đắk Nông) và người Chăm (Bình Thuận).
+            Khám phá kho tàng văn học dân gian, truyền thuyết và sử thi theo từng dân tộc: người Mạ (Lâm Đồng cũ), người M'nông (Đắk Nông cũ) và người Chăm (Bình Thuận cũ).
         </p>
     </header>
 

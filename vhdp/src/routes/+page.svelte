@@ -150,10 +150,10 @@
             <div class="intro-content">
                 <h3 class="intro-heading">Vùng đất của sử thi và huyền thoại</h3>
                 <p class="intro-text">
-                    Khu vực Lâm Đồng, Đắk Nông và Bình Thuận sở hữu kho tàng văn học dân gian vô cùng phong phú. Đây là nơi lưu giữ sử thi Ot Ndrong cổ xưa của người M'Nông bên dòng Sêrêpốk, những bản trường ca K'Ho, Mạ hùng vĩ trên cao nguyên Lang Biang, cùng cội nguồn văn hóa Chăm pa cổ kính nơi duyên hải Bình Thuận.
+                    Khu vực Lâm Đồng cũ, Đắk Nông cũ và Bình Thuận cũ sở hữu kho tàng văn học dân gian vô cùng phong phú. Đây là nơi lưu giữ sử thi Ot Ndrong cổ xưa của người M'Nông bên dòng Sêrêpốk, những bản trường ca K'Ho, Mạ hùng vĩ trên cao nguyên Lang Biang, cùng cội nguồn văn hóa Chăm pa cổ kính nơi duyên hải Bình Thuận cũ.
                 </p>
                 <p class="intro-text">
-                    Thông qua bản đồ tuyến điểm văn học, độc giả có thể dễ dàng định vị và tiếp cận các tác phẩm văn học, nghệ thuật đặc trưng của từng địa phương thuộc ba tỉnh Lâm Đồng, Đắk Nông và Bình Thuận.
+                    Thông qua bản đồ tuyến điểm văn học, độc giả có thể dễ dàng định vị và tiếp cận các tác phẩm văn học, nghệ thuật đặc trưng của từng địa phương thuộc ba tỉnh Lâm Đồng cũ, Đắk Nông cũ và Bình Thuận cũ.
                 </p>
             </div>
             <div class="intro-stat-boxes">
